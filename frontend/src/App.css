@@ -1,0 +1,4 @@
+/* AMS uses Tailwind + tokens defined in index.css. Keep this file minimal. */
+.App {
+    min-height: 100vh;
+}
