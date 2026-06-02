@@ -10,6 +10,9 @@ import {
 const AppContext = createContext(null);
 
 const STORAGE_KEY = "ams-demo-state-v1";
+// NOTE: This stores SEEDED MOCK DATA for the demo prototype only — never real
+// athlete medical records or PHI. A production AMS would persist to an
+// authenticated, encrypted backend (the spec already excludes that scope).
 
 function loadPersisted() {
   if (typeof window === "undefined") return null;
@@ -17,7 +20,8 @@ function loadPersisted() {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
-  } catch {
+  } catch (err) {
+    console.warn("[AMS] Failed to load persisted state:", err);
     return null;
   }
 }
@@ -25,8 +29,9 @@ function loadPersisted() {
 function savePersisted(state) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // quota / private mode — ignore silently
+  } catch (err) {
+    // quota exceeded / private mode — non-fatal
+    console.warn("[AMS] Failed to persist state:", err);
   }
 }
 
@@ -54,7 +59,9 @@ export function AppProvider({ children }) {
     setRole("director");
     try {
       window.localStorage.removeItem(STORAGE_KEY);
-    } catch {}
+    } catch (err) {
+      console.warn("[AMS] Failed to clear persisted state:", err);
+    }
   }, []);
 
   const getAthlete = useCallback(

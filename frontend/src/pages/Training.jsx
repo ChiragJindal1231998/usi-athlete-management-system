@@ -50,9 +50,9 @@ export default function Training() {
               const widthPct = (m.weeks / totalWeeks) * 100;
               return (
                 <div
-                  key={idx}
+                  key={m.name}
                   className="relative flex flex-col justify-between border-r border-white/40 p-3 last:border-r-0"
-                  style={{ width: `${widthPct}%`, background: m.color, color: idx === 2 ? "white" : "white" }}
+                  style={{ width: `${widthPct}%`, background: m.color, color: "white" }}
                   data-testid={`meso-${idx}`}
                 >
                   <div>

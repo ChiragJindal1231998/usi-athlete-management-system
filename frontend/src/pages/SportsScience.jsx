@@ -107,8 +107,8 @@ export default function SportsScience() {
               { name: "Sleep extension protocol", date: "Ongoing", status: "Active" },
               { name: "Magnesium + omega-3 protocol", date: "Ongoing", status: "Active" },
               { name: "Pool recovery", date: "15 Feb", status: "Scheduled" },
-            ].map((r, i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 text-sm">
+            ].map((r) => (
+              <div key={r.name} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 text-sm">
                 <div>
                   <p className="font-medium text-slate-900">{r.name}</p>
                   <p className="text-xs text-slate-500">{r.date}</p>

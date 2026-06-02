@@ -22,6 +22,7 @@ export default function AICopilot() {
   const { stats, athletes, injuries, alerts } = useApp();
   const [messages, setMessages] = useState([
     {
+      id: "msg-welcome",
       role: "assistant",
       text:
         "Hi — I'm the AMS copilot, powered by Claude Sonnet 4.5 and grounded on live squad data. Ask me anything about your athletes, training load, readiness or injuries.",
@@ -55,12 +56,14 @@ export default function AICopilot() {
     if (!q || streaming) return;
 
     setError(null);
-    setMessages((p) => [...p, { role: "user", text: q }]);
+    const userId = `msg-u-${Date.now()}`;
+    const assistantId = `msg-a-${Date.now() + 1}`;
+    setMessages((p) => [...p, { id: userId, role: "user", text: q }]);
     setInput("");
     setStreaming(true);
 
     // placeholder assistant message we'll stream into
-    setMessages((p) => [...p, { role: "assistant", text: "", streaming: true }]);
+    setMessages((p) => [...p, { id: assistantId, role: "assistant", text: "", streaming: true }]);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -103,7 +106,7 @@ export default function AICopilot() {
               assistantText += evt.content;
               setMessages((p) => {
                 const copy = [...p];
-                copy[copy.length - 1] = { role: "assistant", text: assistantText, streaming: true };
+                copy[copy.length - 1] = { id: assistantId, role: "assistant", text: assistantText, streaming: true };
                 return copy;
               });
             } else if (evt.type === "error") {
@@ -111,15 +114,16 @@ export default function AICopilot() {
             } else if (evt.type === "done") {
               // handled by stream end
             }
-          } catch {
-            // ignore malformed frames
+          } catch (parseErr) {
+            // malformed SSE frame — log and continue
+            console.warn("[Copilot] Skipping malformed frame:", parseErr);
           }
         }
       }
 
       setMessages((p) => {
         const copy = [...p];
-        copy[copy.length - 1] = { role: "assistant", text: assistantText || "(no response)" };
+        copy[copy.length - 1] = { id: assistantId, role: "assistant", text: assistantText || "(no response)" };
         return copy;
       });
     } catch (e) {
@@ -156,7 +160,7 @@ export default function AICopilot() {
           <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-6">
             {messages.map((m, idx) => (
               <motion.div
-                key={idx}
+                key={m.id}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22 }}

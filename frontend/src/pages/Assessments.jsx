@@ -43,7 +43,7 @@ export default function Assessments() {
               { name: "Karan Singh", score: 78, tier: "National" },
               { name: "Anjali Mehta", score: 75, tier: "Developing" },
             ].map((t, i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
+              <div key={t.name} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600">{i + 1}</span>
                   <div>
