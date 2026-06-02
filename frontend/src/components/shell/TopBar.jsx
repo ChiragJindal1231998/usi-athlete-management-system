@@ -8,10 +8,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Bell, Search, User2 } from "lucide-react";
+import { ChevronDown, Bell, Search, User2, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 
 export function TopBar() {
-  const { role, setRole, alerts } = useApp();
+  const { role, setRole, alerts, resetDemo } = useApp();
   const currentRoleLabel = ROLES.find((r) => r.id === role)?.label;
   const activeAlerts = alerts.filter((a) => a.status === "active").length;
 
@@ -50,6 +51,19 @@ export function TopBar() {
               {activeAlerts}
             </span>
           )}
+        </button>
+
+        <button
+          data-testid="reset-demo"
+          onClick={() => {
+            resetDemo();
+            toast.success("Demo state reset — Arjun is back in rehab stage 3");
+          }}
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+          title="Reset demo to seed state"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">Reset</span>
         </button>
 
         <DropdownMenu>

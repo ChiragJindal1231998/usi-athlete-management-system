@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, useCallback } from "react";
+import { createContext, useContext, useMemo, useState, useCallback, useEffect } from "react";
 import {
   ATHLETES_SEED,
   INJURIES_SEED,
@@ -9,15 +9,54 @@ import {
 
 const AppContext = createContext(null);
 
-export function AppProvider({ children }) {
-  const [role, setRole] = useState("director");
-  const [athletes, setAthletes] = useState(ATHLETES_SEED);
-  const [injuries, setInjuries] = useState(INJURIES_SEED);
-  const [alerts, setAlerts] = useState(ALERTS_SEED);
-  const [microPlan, setMicroPlan] = useState(PERIODISATION.micro);
-  const [aiLoadAccepted, setAiLoadAccepted] = useState(false);
+const STORAGE_KEY = "ams-demo-state-v1";
 
-  // Helpers
+function loadPersisted() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function savePersisted(state) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // quota / private mode — ignore silently
+  }
+}
+
+export function AppProvider({ children }) {
+  const persisted = loadPersisted();
+
+  const [role, setRole] = useState(persisted?.role ?? "director");
+  const [athletes, setAthletes] = useState(persisted?.athletes ?? ATHLETES_SEED);
+  const [injuries, setInjuries] = useState(persisted?.injuries ?? INJURIES_SEED);
+  const [alerts, setAlerts] = useState(persisted?.alerts ?? ALERTS_SEED);
+  const [microPlan, setMicroPlan] = useState(persisted?.microPlan ?? PERIODISATION.micro);
+  const [aiLoadAccepted, setAiLoadAccepted] = useState(persisted?.aiLoadAccepted ?? false);
+
+  // persist on any state change (debounced via microtask)
+  useEffect(() => {
+    savePersisted({ role, athletes, injuries, alerts, microPlan, aiLoadAccepted });
+  }, [role, athletes, injuries, alerts, microPlan, aiLoadAccepted]);
+
+  const resetDemo = useCallback(() => {
+    setAthletes(ATHLETES_SEED);
+    setInjuries(INJURIES_SEED);
+    setAlerts(ALERTS_SEED);
+    setMicroPlan(PERIODISATION.micro);
+    setAiLoadAccepted(false);
+    setRole("director");
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  }, []);
+
   const getAthlete = useCallback(
     (id) => athletes.find((a) => a.id === id),
     [athletes]
@@ -34,7 +73,6 @@ export function AppProvider({ children }) {
     [injuries]
   );
 
-  // Advance a single injury through rehab stages
   const advanceInjuryStage = useCallback((injuryId) => {
     setInjuries((prev) =>
       prev.map((i) => {
@@ -50,7 +88,6 @@ export function AppProvider({ children }) {
         };
       })
     );
-    // Update athlete status when fully cleared
     setTimeout(() => {
       setInjuries((cur) => {
         const inj = cur.find((i) => i.id === injuryId);
@@ -139,10 +176,22 @@ export function AppProvider({ children }) {
             : d
       )
     );
-    // also bump readiness on Arjun
     setAthletes((p) =>
       p.map((a) => (a.id === "SPR-014" ? { ...a, acwr: 1.18 } : a))
     );
+  }, []);
+
+  const moveSession = useCallback((fromIdx, toIdx) => {
+    if (fromIdx === toIdx) return;
+    setMicroPlan((prev) => {
+      const next = [...prev];
+      // swap session, type & load between the two days; keep the `day` labels in place
+      const from = next[fromIdx];
+      const to = next[toIdx];
+      next[fromIdx] = { ...from, session: to.session, type: to.type, load: to.load };
+      next[toIdx] = { ...to, session: from.session, type: from.type, load: from.load };
+      return next;
+    });
   }, []);
 
   const dismissAlert = useCallback((id) => {
@@ -177,6 +226,8 @@ export function AppProvider({ children }) {
     updateAthleteOnboarding,
     acceptAILoadReduction,
     dismissAlert,
+    moveSession,
+    resetDemo,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

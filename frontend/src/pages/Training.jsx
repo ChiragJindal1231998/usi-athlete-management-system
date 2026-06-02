@@ -6,16 +6,27 @@ import { AIInsight } from "@/components/shared/AIInsight";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PERIODISATION, EXERCISE_LIBRARY } from "@/data/seed";
 import { Button } from "@/components/ui/button";
-import { Plus, Check, Activity, GripVertical } from "lucide-react";
+import { Plus, Check, Activity, GripVertical, CalendarDays } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from "recharts";
 import { toast } from "sonner";
 
+const SESSION_TYPE_STYLE = {
+  Speed: "bg-[#DBEAFE] text-[#1D4ED8] border-[#60A5FA]/50",
+  Strength: "bg-[#FED7AA] text-[#9A3412] border-[#FB923C]/50",
+  Endurance: "bg-[#D1FAE5] text-[#065F46] border-[#34D399]/50",
+  Power: "bg-[#FECACA] text-[#991B1B] border-[#F87171]/50",
+  Recovery: "bg-slate-100 text-slate-600 border-slate-200",
+  Mobility: "bg-[#FEF3C7] text-[#92400E] border-[#FCD34D]/50",
+};
+
 export default function Training() {
-  const { microPlan, aiLoadAccepted, acceptAILoadReduction, athletes } = useApp();
+  const { microPlan, aiLoadAccepted, acceptAILoadReduction, athletes, moveSession } = useApp();
   const arjun = athletes.find((a) => a.id === "SPR-014");
   const [selectedSession, setSelectedSession] = useState(null);
   const [builderItems, setBuilderItems] = useState([]);
   const [rpe, setRpe] = useState(7);
+  const [dragFrom, setDragFrom] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
 
   const acwrData = arjun.weeklyLoad.map((w, idx) => ({
     week: `W${idx + 1}`,
@@ -64,35 +75,70 @@ export default function Training() {
       </Card>
 
       <div className="mt-4 grid grid-cols-12 gap-4">
-        <Card className="col-span-7">
-          <CardHeader title="Current microcycle · Sprint A" subtitle={aiLoadAccepted ? "AI-adjusted plan applied" : "Standard plan"} />
-          <CardBody className="space-y-2">
-            {microPlan.map((d, idx) => (
-              <div
-                key={idx}
-                onClick={() => setSelectedSession(d)}
-                data-testid={`micro-${d.day}`}
-                className="flex cursor-pointer items-center justify-between rounded-lg border border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 text-xs font-semibold text-slate-500">{d.day}</div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{d.session}</p>
-                    <p className="text-xs text-slate-500">{d.type}</p>
+        <Card className="col-span-12">
+          <CardHeader
+            title="Current microcycle · Sprint A"
+            subtitle={
+              <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                <CalendarDays className="h-3 w-3" />
+                Drag any session card across days to reorder · {aiLoadAccepted ? "AI-adjusted plan applied" : "Standard plan"}
+              </span>
+            }
+          />
+          <CardBody>
+            <div className="grid grid-cols-7 gap-2" data-testid="microcycle-calendar">
+              {microPlan.map((d, idx) => {
+                const typeStyle = SESSION_TYPE_STYLE[d.type] || "bg-slate-50 text-slate-600 border-slate-200";
+                const isDragOver = dragOver === idx;
+                const isDragging = dragFrom === idx;
+                return (
+                  <div
+                    key={d.day}
+                    data-testid={`day-${d.day}`}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(idx); }}
+                    onDragLeave={() => setDragOver((v) => (v === idx ? null : v))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (dragFrom !== null && dragFrom !== idx) {
+                        moveSession(dragFrom, idx);
+                        toast.success(`Moved · ${microPlan[dragFrom].day} ↔ ${d.day}`);
+                      }
+                      setDragFrom(null);
+                      setDragOver(null);
+                    }}
+                    className={`flex min-h-[170px] flex-col rounded-lg border-2 p-2 transition-colors ${isDragOver ? "border-[#1E40AF] bg-[#EFF6FF]" : "border-dashed border-slate-200 bg-slate-50/40"}`}
+                  >
+                    <div className="mb-2 flex items-center justify-between px-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{d.day}</span>
+                      <span className="text-[10px] text-slate-400">{d.load}</span>
+                    </div>
+                    <div
+                      draggable
+                      onDragStart={() => setDragFrom(idx)}
+                      onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
+                      onClick={() => setSelectedSession(d)}
+                      data-testid={`session-card-${d.day}`}
+                      className={`group flex-1 cursor-grab rounded-md border bg-white p-3 shadow-sm transition-all active:cursor-grabbing ${typeStyle} ${isDragging ? "opacity-50 ring-2 ring-[#1E40AF]" : "hover:shadow-md"}`}
+                    >
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <span className={`rounded-full bg-white/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider`}>{d.type}</span>
+                        <GripVertical className="h-3 w-3 opacity-30 group-hover:opacity-70" />
+                      </div>
+                      <p className="text-[11px] font-medium leading-snug">{d.session}</p>
+                      <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/60">
+                        <div className="h-full bg-current opacity-70" style={{ width: `${d.load}%` }} />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full" style={{ width: `${d.load}%`, background: d.load > 70 ? "#DC2626" : d.load > 50 ? "#EA580C" : "#1E40AF" }} />
-                  </div>
-                  <span className="w-8 text-right text-xs text-slate-600">{d.load}</span>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </div>
           </CardBody>
         </Card>
+      </div>
 
-        <div className="col-span-5 space-y-4">
+      <div className="mt-4 grid grid-cols-12 gap-4">
+        <div className="col-span-7">
           <AIInsight
             title="AI training recommendation · Arjun Sharma"
             confidence={78}
@@ -119,39 +165,39 @@ export default function Training() {
               Suggest swapping Friday max-velocity flys and Saturday hill sprints for low-intensity recovery work.
             </p>
           </AIInsight>
-
-          <Card>
-            <CardHeader title="Session detail" subtitle={selectedSession ? `${selectedSession.day} · ${selectedSession.type}` : "Pick a day to view"} />
-            <CardBody>
-              {selectedSession ? (
-                <div className="space-y-3">
-                  <div className="rounded-lg bg-slate-50 p-3 text-sm">
-                    <p className="font-medium text-slate-900">{selectedSession.session}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">Planned load · {selectedSession.load}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-slate-700">Post-session RPE</p>
-                    <div className="mt-1.5 flex items-center gap-1">
-                      {Array.from({ length: 10 }).map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setRpe(i + 1)}
-                          data-testid={`rpe-${i + 1}`}
-                          className={`h-7 w-7 rounded text-xs font-medium transition-colors ${rpe === i + 1 ? "bg-[#1E40AF] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-slate-500">Collected from athletes immediately after each session.</p>
-                  </div>
-                </div>
-              ) : (
-                <p className="py-6 text-center text-sm text-slate-500">Select a day from the microcycle.</p>
-              )}
-            </CardBody>
-          </Card>
         </div>
+
+        <Card className="col-span-5">
+          <CardHeader title="Session detail" subtitle={selectedSession ? `${selectedSession.day} · ${selectedSession.type}` : "Pick a day to view"} />
+          <CardBody>
+            {selectedSession ? (
+              <div className="space-y-3">
+                <div className="rounded-lg bg-slate-50 p-3 text-sm">
+                  <p className="font-medium text-slate-900">{selectedSession.session}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Planned load · {selectedSession.load}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-700">Post-session RPE</p>
+                  <div className="mt-1.5 flex items-center gap-1">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setRpe(i + 1)}
+                        data-testid={`rpe-${i + 1}`}
+                        className={`h-7 w-7 rounded text-xs font-medium transition-colors ${rpe === i + 1 ? "bg-[#1E40AF] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-slate-500">Collected from athletes immediately after each session.</p>
+                </div>
+              </div>
+            ) : (
+              <p className="py-6 text-center text-sm text-slate-500">Click any session card from the calendar above.</p>
+            )}
+          </CardBody>
+        </Card>
       </div>
 
       <div className="mt-4 grid grid-cols-12 gap-4">
