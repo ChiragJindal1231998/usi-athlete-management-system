@@ -45,27 +45,24 @@ export default function Dashboard() {
   const head = HEADER[role] || HEADER.director;
   const roleLabel = ROLES.find((r) => r.id === role)?.label || "Performance director";
   const staff = STAFF[role];
-  const isAthlete = role === "athlete";
 
   return (
     <div data-testid="dashboard-page">
-      {!isAthlete && (
-        <PageHeader
-          title={head.title}
-          subtitle={`${roleLabel}${staff ? ` · ${staff.name}` : ""} · ${head.scope}`}
-          testId={`dashboard-header-${role}`}
-          action={
-            <div className="flex items-center gap-2">
-              <span data-testid="role-context-chip" className="flex items-center gap-1.5 rounded-lg border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1.5 text-xs font-medium text-[#1E40AF]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#1E40AF]" /> {roleLabel}
-              </span>
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600">
-                Week 8 · pre-competition
-              </div>
+      <PageHeader
+        title={head.title}
+        subtitle={`${roleLabel}${staff ? ` · ${staff.name}` : ""} · ${head.scope}`}
+        testId={`dashboard-header-${role}`}
+        action={
+          <div className="flex items-center gap-2">
+            <span data-testid="role-context-chip" className="flex items-center gap-1.5 rounded-lg border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1.5 text-xs font-medium text-[#1E40AF]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#1E40AF]" /> {roleLabel}
+            </span>
+            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600">
+              Week 8 · pre-competition
             </div>
-          }
-        />
-      )}
+          </div>
+        }
+      />
 
       <View onOpenAthlete={setOpenId} />
 
