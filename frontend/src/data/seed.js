@@ -80,6 +80,31 @@ export const ATHLETES_SEED = [
   { id: "ATH-040", name: "Ritu Kapoor", age: 18, sport: "Athletics", event: "800m", squad: "Mid distance", coach: "Rajesh Bhat", physio: "Dr Rao", status: "available", readiness: 70, acwr: 1.19, docsVerified: false, onboarding: "invited", tags: ["Development squad"], talentScore: 68, nutritionAdherence: 75 },
 ];
 
+// Athletes selectable from the "Login as athlete" picker. Each maps the athlete
+// role onto a different self-view so the demo can show contrasting journeys:
+// a deep rehab (Arjun), a return-to-play case (Manish) and a fully fit athlete (Rohan).
+export const ATHLETE_LOGINS = [
+  { id: "SPR-014", name: "Arjun Sharma", note: "100m · rehab day 14" },
+  { id: "SPR-018", name: "Manish Reddy", note: "100m · return-to-play" },
+  { id: "SPR-002", name: "Rohan Verma", note: "200m · fully available" },
+];
+
+// Org hierarchy for dashboard drill-down: program → its squads. Used by the
+// Federation→Program→Squad filter on the Admin / Director dashboards.
+export const PROGRAM_SQUADS = {
+  Sprints: ["Sprint A", "Sprint B"],
+  Jumps: ["Jumps"],
+  Throws: ["Throws"],
+  Endurance: ["Mid distance"],
+  Combined: ["Combined"],
+};
+
+// Reverse lookup: squad → program.
+export const SQUAD_PROGRAM = Object.entries(PROGRAM_SQUADS).reduce((map, [program, squads]) => {
+  squads.forEach((s) => { map[s] = program; });
+  return map;
+}, {});
+
 // Catalogue of tags that can be applied to athletes (athlete registry tagging).
 export const ATHLETE_TAGS = [
   "Elite prospect",

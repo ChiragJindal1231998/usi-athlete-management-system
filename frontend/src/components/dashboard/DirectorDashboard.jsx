@@ -1,42 +1,55 @@
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { StatCard } from "@/components/shared/StatCard";
 import { Card, CardHeader, CardBody } from "@/components/shared/Card";
 import { AIInsight } from "@/components/shared/AIInsight";
 import { StatusBadge, statusVariant } from "@/components/shared/StatusBadge";
 import { AthleteList } from "@/components/dashboard/widgets";
+import { HierarchyFilter, scopeByHierarchy, hierarchyLabel } from "@/components/dashboard/HierarchyFilter";
 import { READINESS_TREND } from "@/data/seed";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
-// Performance Director — outcomes & selection across programs.
+// Performance Director — outcomes & selection across programs, drillable in place.
 export default function DirectorDashboard({ onOpenAthlete }) {
-  const { athletes, stats } = useApp();
+  const { athletes } = useApp();
+  const [scope, setScope] = useState({ program: null, squad: null });
 
-  const atRisk = athletes.filter((a) => a.acwr > 1.3 || a.status !== "available");
-  const eliteProspects = athletes.filter((a) => (a.tags || []).includes("Elite prospect"));
-  const selection = [...athletes].sort((a, b) => (b.talentScore || 0) - (a.talentScore || 0)).slice(0, 6);
+  // Everything below recomputes from the active hierarchy scope.
+  const visible = scopeByHierarchy(athletes, scope);
+  const scopeName = hierarchyLabel(scope);
+
+  const avgReadiness = visible.length ? Math.round(visible.reduce((s, a) => s + a.readiness, 0) / visible.length) : 0;
+  const injured = visible.filter((a) => a.status !== "available").length;
+  const atRisk = visible.filter((a) => a.acwr > 1.3 || a.status !== "available");
+  const eliteProspects = visible.filter((a) => (a.tags || []).includes("Elite prospect"));
+  const selection = [...visible].sort((a, b) => (b.talentScore || 0) - (a.talentScore || 0)).slice(0, 6);
 
   // Trending: high talent + available = trending up; injured/high ACWR = down.
-  const trendingUp = [...athletes]
+  const trendingUp = [...visible]
     .filter((a) => a.status === "available" && a.acwr <= 1.3)
     .sort((a, b) => (b.talentScore || 0) - (a.talentScore || 0))
     .slice(0, 3);
-  const trendingDown = [...athletes]
+  const trendingDown = [...visible]
     .filter((a) => a.status !== "available" || a.acwr > 1.3)
     .sort((a, b) => b.acwr - a.acwr)
     .slice(0, 3);
 
   return (
     <div data-testid="dashboard-director-view">
+      <div className="mb-4">
+        <HierarchyFilter athletes={athletes} value={scope} onChange={setScope} />
+      </div>
+
       <div className="grid grid-cols-4 gap-4">
-        <StatCard testId="stat-readiness" label="Avg readiness" value={stats.avgReadiness} accent suffix="/ 100" trend={-2} />
+        <StatCard testId="stat-readiness" label="Avg readiness" value={avgReadiness} accent suffix="/ 100" trend={-2} />
         <StatCard testId="stat-at-risk" label="Athletes at risk" value={atRisk.length} trend={2} trendLabel="load + injury" />
         <StatCard testId="stat-elite" label="Elite prospects" value={eliteProspects.length} trend={0} trendLabel="selection pool" />
-        <StatCard testId="stat-injured" label="Unavailable" value={stats.injured} trend={2} trendLabel="this week" />
+        <StatCard testId="stat-injured" label="Unavailable" value={injured} trend={2} trendLabel="this week" />
       </div>
 
       <div className="mt-4">
-        <AIInsight title="Predictive outlook · selection & risk" confidence={74} testId="ai-director">
+        <AIInsight title={`Predictive outlook · ${scopeName}`} confidence={74} testId="ai-director">
           <p>
             <strong>{trendingUp[0]?.name || "—"}</strong> and <strong>{trendingUp[1]?.name || "—"}</strong> are trending
             up on the composite talent score and remain in the optimal load band — strong selection candidates this cycle.
