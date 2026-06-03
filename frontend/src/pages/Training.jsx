@@ -126,7 +126,7 @@ export default function Training() {
                   >
                     <div className="mb-2 flex items-center justify-between px-1">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{d.day}</span>
-                      <span className="text-[10px] text-slate-400">{d.load}</span>
+                      <span className="text-[10px] text-slate-400">{d.load}%</span>
                     </div>
                     <div
                       draggable={canMove}
@@ -256,7 +256,7 @@ export default function Training() {
               <div className="space-y-3">
                 <div className="rounded-lg bg-slate-50 p-3 text-sm">
                   <p className="font-medium text-slate-900">{selectedSession.session}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Planned load · {selectedSession.load}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Planned load · {selectedSession.load}%</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-slate-700">Post-session RPE</p>
