@@ -1,17 +1,27 @@
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { StatCard } from "@/components/shared/StatCard";
 import { Card, CardHeader, CardBody } from "@/components/shared/Card";
 import { AIInsight } from "@/components/shared/AIInsight";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { initialsOf } from "@/components/dashboard/widgets";
+import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
 import { ONBOARDING_STAGES, PERIODISATION } from "@/data/seed";
 import { UserPlus, FileCheck2, CalendarDays, ArrowRight } from "lucide-react";
 
 const STAGE_VARIANT = { invited: "mild", pending: "moderate", review: "rehab", active: "cleared" };
+// What the next action is, per current stage.
+const STAGE_ACTION = {
+  invited: "Share invite & register",
+  pending: "Upload documents",
+  review: "Verify & activate",
+};
 
 // Operations — onboarding pipeline, document verification queue, scheduling.
 export default function OpsDashboard({ onOpenAthlete }) {
-  const { athletes, advanceOnboarding } = useApp();
+  const { athletes } = useApp();
+  const [flowId, setFlowId] = useState(null);
+  const flowAthlete = athletes.find((a) => a.id === flowId) || null;
 
   const pipeline = athletes.filter((a) => a.onboarding !== "active");
   const unverified = athletes.filter((a) => !a.docsVerified);
@@ -66,10 +76,10 @@ export default function OpsDashboard({ onOpenAthlete }) {
                     <StatusBadge variant={STAGE_VARIANT[a.onboarding] || "mild"}>{a.onboarding}</StatusBadge>
                     <button
                       data-testid={`ops-advance-${a.id}`}
-                      onClick={() => advanceOnboarding(a.id)}
+                      onClick={() => setFlowId(a.id)}
                       className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-[#1E40AF] hover:bg-slate-50"
                     >
-                      Advance <ArrowRight className="h-3.5 w-3.5" />
+                      {STAGE_ACTION[a.onboarding] || "Open"} <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
@@ -84,12 +94,12 @@ export default function OpsDashboard({ onOpenAthlete }) {
             <div className="divide-y divide-slate-100">
               {unverified.length === 0 && <p className="px-5 py-6 text-center text-sm text-slate-500">All documents verified.</p>}
               {unverified.map((a) => (
-                <button key={a.id} data-testid={`ops-verify-${a.id}`} onClick={() => onOpenAthlete?.(a.id)} className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-slate-50">
+                <button key={a.id} data-testid={`ops-verify-${a.id}`} onClick={() => setFlowId(a.id)} className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-slate-50">
                   <div>
                     <p className="text-sm font-medium text-slate-900">{a.name}</p>
-                    <p className="text-xs text-slate-500">Registration + medical clearance</p>
+                    <p className="text-xs text-slate-500">{a.onboarding === "review" ? "Documents submitted · ready to verify" : `Awaiting ${a.onboarding === "invited" ? "self-registration" : "documents"}`}</p>
                   </div>
-                  <StatusBadge variant="moderate">unverified</StatusBadge>
+                  <StatusBadge variant={a.onboarding === "review" ? "rehab" : "moderate"}>{a.onboarding === "review" ? "verify" : "unverified"}</StatusBadge>
                 </button>
               ))}
             </div>
@@ -107,6 +117,8 @@ export default function OpsDashboard({ onOpenAthlete }) {
           </CardBody>
         </Card>
       </div>
+
+      <OnboardingDialog athlete={flowAthlete} open={!!flowId} onOpenChange={(o) => !o && setFlowId(null)} />
     </div>
   );
 }

@@ -21,10 +21,14 @@ export function AthleteDrawer({ athleteId, open, onOpenChange }) {
   if (!athlete) return null;
 
   const injuries = getInjuriesForAthlete(athlete.id);
-  const docs = DOCUMENTS_SEED[athlete.id] || [
-    { id: "d1", name: "Federation registration form", verified: athlete.docsVerified, uploadedOn: "—" },
-    { id: "d2", name: "Medical clearance", verified: athlete.docsVerified, uploadedOn: "—" },
-  ];
+  // Prefer documents captured by the live onboarding flow; fall back to seed.
+  const docs =
+    (athlete.documents && athlete.documents.length > 0
+      ? athlete.documents.map((d, i) => ({ id: `doc-${i}`, ...d }))
+      : DOCUMENTS_SEED[athlete.id]) || [
+      { id: "d1", name: "Federation registration form", verified: athlete.docsVerified, uploadedOn: "—" },
+      { id: "d2", name: "Medical clearance", verified: athlete.docsVerified, uploadedOn: "—" },
+    ];
 
   const initials = athlete.name
     .split(" ")

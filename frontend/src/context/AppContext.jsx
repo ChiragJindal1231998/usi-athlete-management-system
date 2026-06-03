@@ -14,6 +14,14 @@ import { can as canDo, scopeAthletes, selfAthleteId, isFederationScope, SCOPE_LA
 const AppContext = createContext(null);
 
 const STORAGE_KEY = "ams-demo-state-v1";
+
+// Required onboarding documents an athlete uploads at the "pending" stage.
+const REQUIRED_DOCS = [
+  "Federation registration form",
+  "Medical clearance",
+  "Anti-doping consent",
+  "Photo ID",
+];
 // NOTE: This stores SEEDED MOCK DATA for the demo prototype only — never real
 // athlete medical records or PHI. A production AMS would persist to an
 // authenticated, encrypted backend (the spec already excludes that scope).
@@ -169,6 +177,7 @@ export function AppProvider({ children }) {
 
   const addAthlete = useCallback((draft) => {
     const id = draft.id || `ATH-${String(Math.floor(Math.random() * 900) + 100)}`;
+    const onboarding = draft.onboarding || "invited";
     const newAthlete = {
       id,
       name: draft.name,
@@ -182,7 +191,11 @@ export function AppProvider({ children }) {
       readiness: 75,
       acwr: 1.0,
       docsVerified: false,
-      onboarding: draft.onboarding || "invited",
+      onboarding,
+      // Shareable invite reference handed to the athlete to self-register.
+      inviteCode: onboarding === "invited" ? `USI-${id.replace(/[^A-Z0-9]/gi, "").slice(-4).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}` : null,
+      registration: null,
+      documents: [],
       tags: draft.tags || [],
     };
     setAthletes((p) => [newAthlete, ...p]);
@@ -194,6 +207,50 @@ export function AppProvider({ children }) {
       p.map((a) =>
         a.id === id
           ? { ...a, onboarding, docsVerified: onboarding === "verified" || onboarding === "active" }
+          : a
+      )
+    );
+  }, []);
+
+  // ── Full onboarding lifecycle: invited → pending → review → active ──────────
+  // Step 1 (Ops): athlete is created at "invited" with an inviteCode (addAthlete).
+  // Step 2 (Athlete): self-register with profile + consents → "pending".
+  const selfRegisterAthlete = useCallback((id, registration) => {
+    setAthletes((p) =>
+      p.map((a) =>
+        a.id === id && a.onboarding === "invited"
+          ? { ...a, onboarding: "pending", registration: { ...registration, submittedOn: new Date().toISOString().slice(0, 10) } }
+          : a
+      )
+    );
+  }, []);
+
+  // Step 3 (Athlete): upload required documents → "review" (awaiting Ops sign-off).
+  const submitOnboardingDocs = useCallback((id) => {
+    setAthletes((p) =>
+      p.map((a) => {
+        if (a.id !== id || a.onboarding !== "pending") return a;
+        const documents = REQUIRED_DOCS.map((name) => ({
+          name,
+          uploadedOn: new Date().toISOString().slice(0, 10),
+          verified: false,
+        }));
+        return { ...a, onboarding: "review", documents };
+      })
+    );
+  }, []);
+
+  // Step 4 (Ops): verify documents → "active", unlock the full athlete experience.
+  const verifyOnboarding = useCallback((id) => {
+    setAthletes((p) =>
+      p.map((a) =>
+        a.id === id && a.onboarding === "review"
+          ? {
+              ...a,
+              onboarding: "active",
+              docsVerified: true,
+              documents: (a.documents || []).map((d) => ({ ...d, verified: true, verifiedOn: new Date().toISOString().slice(0, 10) })),
+            }
           : a
       )
     );
@@ -370,6 +427,9 @@ export function AppProvider({ children }) {
     addAthlete,
     updateAthleteOnboarding,
     advanceOnboarding,
+    selfRegisterAthlete,
+    submitOnboardingDocs,
+    verifyOnboarding,
     addAthleteTag,
     removeAthleteTag,
     addInjuryNote,
