@@ -34,6 +34,7 @@ export const SCOPE_LABEL = {
 //   athletes.add        — open the onboarding/add-athlete flow
 //   athletes.verify     — advance onboarding / verify documents
 //   athletes.tag        — add or remove athlete tags
+//   athletes.assignCoach— (re)assign an athlete's coach
 //   injury.report       — report an injury via the body map
 //   injury.advance      — advance the return-to-play stage
 //   injury.note         — append a clinical note
@@ -50,11 +51,11 @@ export const SCOPE_LABEL = {
 //   self.uploadDocs     — upload onboarding documents (athlete)
 const CAPABILITIES = {
   admin: [
-    "athletes.add", "athletes.verify", "athletes.tag",
+    "athletes.add", "athletes.verify", "athletes.tag", "athletes.assignCoach",
     "alert.dismiss", "analytics.export",
   ],
   director: [
-    "alert.dismiss", "analytics.export", "assessment.record",
+    "alert.dismiss", "analytics.export", "assessment.record", "athletes.assignCoach",
   ],
   coach: [
     "training.acceptAI", "training.attendance", "training.moveSession",

@@ -24,6 +24,10 @@ export const STAFF = {
   athlete: { name: "Arjun Sharma", role: "100m sprinter · SPR-014" },
 };
 
+// Coaching staff an athlete can be assigned to (used by the enrolment dialog
+// and the coach-assignment control in the athlete detail panel).
+export const COACHES = ["Meera Iyer", "Suresh Kumar", "Anil Khanna", "Rajesh Bhat"];
+
 // Athletes (12 total). Arjun is the protagonist.
 export const ATHLETES_SEED = [
   {
@@ -37,6 +41,7 @@ export const ATHLETES_SEED = [
     physio: "Dr Rao",
     status: "injured", // available | injured | rehab
     readiness: 58,
+    wellness: { sleep: 72, soreness: 60, hrv: 64, energy: 70, mood: 80 },
     acwr: 1.52,
     rpeTrend: [6, 7, 7, 8, 8, 9, 9, 8],
     weeklyLoad: [340, 410, 470, 520, 610, 690, 720, 540],
@@ -67,17 +72,17 @@ export const ATHLETES_SEED = [
       { day: "D7", total: 1600, hsr: 90, sprint: 0, maxSpeed: 21.0, accel: 3 },
     ],
   },
-  { id: "SPR-002", name: "Rohan Verma", age: 24, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 84, acwr: 1.08, docsVerified: true, onboarding: "active", tags: ["National camp"], talentScore: 82, nutritionAdherence: 90 },
-  { id: "SPR-005", name: "Karan Singh", age: 21, sport: "Athletics", event: "400m", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 79, acwr: 1.18, docsVerified: true, onboarding: "active", tags: [], talentScore: 78, nutritionAdherence: 84 },
-  { id: "JMP-009", name: "Aditya Patel", age: 23, sport: "Athletics", event: "Long jump", squad: "Jumps", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 72, acwr: 1.31, docsVerified: true, onboarding: "active", tags: ["Elite prospect", "Load watch"], talentScore: 88, nutritionAdherence: 72 },
-  { id: "ATH-021", name: "Vikas Nair", age: 25, sport: "Athletics", event: "Decathlon", squad: "Combined", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 81, acwr: 1.04, docsVerified: true, onboarding: "active", tags: [], talentScore: 74, nutritionAdherence: 88 },
-  { id: "SPR-018", name: "Manish Reddy", age: 20, sport: "Athletics", event: "100m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "rehab", readiness: 64, acwr: 0.91, docsVerified: true, onboarding: "active", tags: ["Injury watch"], talentScore: 80, nutritionAdherence: 80 },
-  { id: "HUR-007", name: "Devika Rao", age: 23, sport: "Athletics", event: "100m hurdles", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 88, acwr: 1.12, docsVerified: true, onboarding: "active", tags: ["Elite prospect"], talentScore: 85, nutritionAdherence: 93 },
-  { id: "SPR-022", name: "Neha Joshi", age: 22, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "injured", readiness: 61, acwr: 1.22, docsVerified: true, onboarding: "active", tags: ["Injury watch"], talentScore: 76, nutritionAdherence: 86 },
-  { id: "JMP-012", name: "Pooja Shah", age: 21, sport: "Athletics", event: "Triple jump", squad: "Jumps", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 77, acwr: 1.14, docsVerified: true, onboarding: "active", tags: [], talentScore: 73, nutritionAdherence: 82 },
-  { id: "THR-003", name: "Sandeep Yadav", age: 26, sport: "Athletics", event: "Shot put", squad: "Throws", coach: "Anil Khanna", physio: "Dr Rao", status: "injured", readiness: 52, acwr: 1.41, docsVerified: true, onboarding: "active", tags: ["Injury watch", "Load watch"], talentScore: 70, nutritionAdherence: 64 },
-  { id: "SPR-031", name: "Anjali Mehta", age: 19, sport: "Athletics", event: "100m sprint", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 82, acwr: 1.07, docsVerified: false, onboarding: "pending", tags: ["Development squad"], talentScore: 75, nutritionAdherence: 79 },
-  { id: "ATH-040", name: "Ritu Kapoor", age: 18, sport: "Athletics", event: "800m", squad: "Mid distance", coach: "Rajesh Bhat", physio: "Dr Rao", status: "available", readiness: 70, acwr: 1.19, docsVerified: false, onboarding: "invited", tags: ["Development squad"], talentScore: 68, nutritionAdherence: 75 },
+  { id: "SPR-002", name: "Rohan Verma", age: 24, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 84, wellness: { sleep: 86, soreness: 84, hrv: 84, energy: 82, mood: 82 }, acwr: 1.08, docsVerified: true, onboarding: "active", tags: ["National camp"], talentScore: 82, nutritionAdherence: 90 },
+  { id: "SPR-005", name: "Karan Singh", age: 21, sport: "Athletics", event: "400m", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 79, wellness: { sleep: 80, soreness: 78, hrv: 80, energy: 78, mood: 78 }, acwr: 1.18, docsVerified: true, onboarding: "active", tags: [], talentScore: 78, nutritionAdherence: 84 },
+  { id: "JMP-009", name: "Aditya Patel", age: 23, sport: "Athletics", event: "Long jump", squad: "Jumps", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 72, wellness: { sleep: 74, soreness: 72, hrv: 74, energy: 72, mood: 72 }, acwr: 1.31, docsVerified: true, onboarding: "active", tags: ["Elite prospect", "Load watch"], talentScore: 88, nutritionAdherence: 72 },
+  { id: "ATH-021", name: "Vikas Nair", age: 25, sport: "Athletics", event: "Decathlon", squad: "Combined", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 81, wellness: { sleep: 82, soreness: 80, hrv: 82, energy: 80, mood: 80 }, acwr: 1.04, docsVerified: true, onboarding: "active", tags: [], talentScore: 74, nutritionAdherence: 88 },
+  { id: "SPR-018", name: "Manish Reddy", age: 20, sport: "Athletics", event: "100m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "rehab", readiness: 64, wellness: { sleep: 66, soreness: 62, hrv: 64, energy: 64, mood: 64 }, acwr: 0.91, docsVerified: true, onboarding: "active", tags: ["Injury watch"], talentScore: 80, nutritionAdherence: 80 },
+  { id: "HUR-007", name: "Devika Rao", age: 23, sport: "Athletics", event: "100m hurdles", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 88, wellness: { sleep: 90, soreness: 88, hrv: 88, energy: 86, mood: 86 }, acwr: 1.12, docsVerified: true, onboarding: "active", tags: ["Elite prospect"], talentScore: 85, nutritionAdherence: 93 },
+  { id: "SPR-022", name: "Neha Joshi", age: 22, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "injured", readiness: 61, wellness: { sleep: 63, soreness: 58, hrv: 62, energy: 60, mood: 62 }, acwr: 1.22, docsVerified: true, onboarding: "active", tags: ["Injury watch"], talentScore: 76, nutritionAdherence: 86 },
+  { id: "JMP-012", name: "Pooja Shah", age: 21, sport: "Athletics", event: "Triple jump", squad: "Jumps", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 77, wellness: { sleep: 78, soreness: 76, hrv: 78, energy: 76, mood: 76 }, acwr: 1.14, docsVerified: true, onboarding: "active", tags: [], talentScore: 73, nutritionAdherence: 82 },
+  { id: "THR-003", name: "Sandeep Yadav", age: 26, sport: "Athletics", event: "Shot put", squad: "Throws", coach: "Anil Khanna", physio: "Dr Rao", status: "injured", readiness: 52, wellness: { sleep: 60, soreness: 50, hrv: 58, energy: 58, mood: 60 }, acwr: 1.41, docsVerified: true, onboarding: "active", tags: ["Injury watch", "Load watch"], talentScore: 70, nutritionAdherence: 64 },
+  { id: "SPR-031", name: "Anjali Mehta", age: 19, sport: "Athletics", event: "100m sprint", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 82, wellness: { sleep: 84, soreness: 82, hrv: 82, energy: 80, mood: 80 }, acwr: 1.07, docsVerified: false, onboarding: "pending", tags: ["Development squad"], talentScore: 75, nutritionAdherence: 79 },
+  { id: "ATH-040", name: "Ritu Kapoor", age: 18, sport: "Athletics", event: "800m", squad: "Mid distance", coach: "Rajesh Bhat", physio: "Dr Rao", status: "available", readiness: 70, wellness: { sleep: 72, soreness: 68, hrv: 70, energy: 70, mood: 70 }, acwr: 1.19, docsVerified: false, onboarding: "invited", tags: ["Development squad"], talentScore: 68, nutritionAdherence: 75 },
 ];
 
 // Athletes selectable from the "Login as athlete" picker. Each maps the athlete

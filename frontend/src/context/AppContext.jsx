@@ -10,6 +10,7 @@ import {
   FITNESS_TESTS,
 } from "@/data/seed";
 import { can as canDo, scopeAthletes, selfAthleteId, isFederationScope, SCOPE_LABEL } from "@/lib/access";
+import { defaultWellness } from "@/lib/readiness";
 
 const AppContext = createContext(null);
 
@@ -192,6 +193,7 @@ export function AppProvider({ children }) {
       physio: "Dr Rao",
       status: "available",
       readiness: 75,
+      wellness: defaultWellness(75),
       acwr: 1.0,
       docsVerified: false,
       onboarding,
@@ -271,6 +273,11 @@ export function AppProvider({ children }) {
         return { ...a, onboarding: next, docsVerified: next === "active" ? true : a.docsVerified };
       })
     );
+  }, []);
+
+  const assignCoach = useCallback((id, coach) => {
+    if (!coach) return;
+    setAthletes((p) => p.map((a) => (a.id === id ? { ...a, coach } : a)));
   }, []);
 
   const addAthleteTag = useCallback((id, tag) => {
@@ -443,6 +450,7 @@ export function AppProvider({ children }) {
     verifyOnboarding,
     addAthleteTag,
     removeAthleteTag,
+    assignCoach,
     addInjuryNote,
     setAttendanceStatus,
     acceptAILoadReduction,

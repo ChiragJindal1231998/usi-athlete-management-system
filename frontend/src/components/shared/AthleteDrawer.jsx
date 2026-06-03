@@ -1,9 +1,10 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { StatusBadge, statusVariant, readinessVariant } from "@/components/shared/StatusBadge";
 import { useApp } from "@/context/AppContext";
-import { DOCUMENTS_SEED, ATHLETE_TAGS, ONBOARDING_STAGES } from "@/data/seed";
+import { DOCUMENTS_SEED, ATHLETE_TAGS, ONBOARDING_STAGES, COACHES } from "@/data/seed";
+import { readinessBreakdown } from "@/lib/readiness";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CheckCircle2, FileText, AlertTriangle, X, Plus, ArrowRight } from "lucide-react";
+import { CheckCircle2, FileText, AlertTriangle, X, Plus, ArrowRight, ChevronDown, Activity } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -14,11 +15,14 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export function AthleteDrawer({ athleteId, open, onOpenChange }) {
-  const { getAthlete, getInjuriesForAthlete, addAthleteTag, removeAthleteTag, advanceOnboarding, can } = useApp();
+  const { getAthlete, getInjuriesForAthlete, addAthleteTag, removeAthleteTag, advanceOnboarding, assignCoach, can } = useApp();
   const canTag = can("athletes.tag");
   const canVerify = can("athletes.verify");
+  const canAssignCoach = can("athletes.assignCoach");
   const athlete = athleteId ? getAthlete(athleteId) : null;
   if (!athlete) return null;
+
+  const readiness = readinessBreakdown(athlete);
 
   const injuries = getInjuriesForAthlete(athlete.id);
   // Prefer documents captured by the live onboarding flow; fall back to seed.
@@ -94,6 +98,75 @@ export function AthleteDrawer({ athleteId, open, onOpenChange }) {
                 <Info label="Readiness" value={athlete.readiness} />
                 {athlete.pb && <Info label="PB 100m" value={athlete.pb["100m"]} />}
                 {athlete.pb && <Info label="PB 200m" value={athlete.pb["200m"]} />}
+              </div>
+
+              {/* Readiness score — composite of weighted wellness factors */}
+              {readiness && (
+                <div className="mt-4 rounded-lg border border-slate-200 p-4" data-testid="readiness-breakdown">
+                  <div className="flex items-center justify-between">
+                    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      <Activity className="h-3.5 w-3.5 text-[#1E40AF]" /> Readiness score
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-slate-900">{readiness.score}</span>
+                      <StatusBadge variant={readinessVariant(readiness.score)}>/ 100</StatusBadge>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {readiness.factors.map((f) => (
+                      <div key={f.key} data-testid={`readiness-factor-${f.key}`} className="flex items-center gap-3 text-xs">
+                        <span className="w-28 shrink-0 text-slate-600">{f.label}</span>
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-full rounded-full bg-[#1E40AF]" style={{ width: `${f.value}%` }} />
+                        </div>
+                        <span className="w-8 text-right font-medium text-slate-900">{f.value}</span>
+                        <span className="w-10 text-right text-[10px] text-slate-400">{Math.round(f.weight * 100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                  {readiness.penalty > 0 && (
+                    <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#9A3412]">
+                      <AlertTriangle className="h-3 w-3" /> −{readiness.penalty} load penalty · ACWR {readiness.acwr?.toFixed(2)} outside 0.8–1.3 band
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Coach assignment */}
+              <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 p-4" data-testid="coach-assign">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Coach</p>
+                  <p className="mt-0.5 text-sm font-medium text-slate-900">{athlete.coach || "Unassigned"}</p>
+                </div>
+                {canAssignCoach && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        data-testid="assign-coach-btn"
+                        className="flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                      >
+                        Reassign <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      {COACHES.map((c) => (
+                        <DropdownMenuItem
+                          key={c}
+                          data-testid={`coach-option-${c.replace(/\s+/g, "-").toLowerCase()}`}
+                          onSelect={() => {
+                            if (c === athlete.coach) return;
+                            assignCoach(athlete.id, c);
+                            toast.success(`${athlete.name} assigned to ${c}`);
+                          }}
+                          className="cursor-pointer text-xs"
+                        >
+                          <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${c === athlete.coach ? "bg-[#1E40AF]" : "bg-slate-300"}`} />
+                          {c}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
 
               {/* Tags */}
