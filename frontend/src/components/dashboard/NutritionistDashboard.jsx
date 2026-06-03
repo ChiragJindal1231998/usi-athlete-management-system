@@ -4,11 +4,11 @@ import { StatCard } from "@/components/shared/StatCard";
 import { Card, CardHeader, CardBody } from "@/components/shared/Card";
 import { AIInsight } from "@/components/shared/AIInsight";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { NUTRITION_PLAN } from "@/data/seed";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Apple, ArrowRight } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { Apple } from "lucide-react";
 
-// Nutritionist — compliance across athletes, who's drifting, body-composition flags.
+// Nutritionist — compliance across the squad, who's drifting, body-composition flags.
+// No injury / rehab content — this persona only cares about fuelling adherence.
 export default function NutritionistDashboard({ onOpenAthlete }) {
   const { athletes } = useApp();
 
@@ -19,7 +19,16 @@ export default function NutritionistDashboard({ onOpenAthlete }) {
   const avgAdherence = Math.round(athletes.reduce((s, a) => s + adherence(a), 0) / athletes.length);
   const onTrack = athletes.filter((a) => adherence(a) >= 85).length;
 
-  const adherenceTrend = NUTRITION_PLAN.adherenceWeek.map((v, i) => ({ day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i], adherence: v }));
+  // Average adherence per squad — where to focus a group fuelling session.
+  const bySquad = [...new Set(athletes.map((a) => a.squad))]
+    .map((squad) => {
+      const members = athletes.filter((a) => a.squad === squad);
+      const avg = Math.round(members.reduce((s, a) => s + adherence(a), 0) / members.length);
+      return { squad, adherence: avg };
+    })
+    .sort((a, b) => a.adherence - b.adherence);
+
+  const lowestSquad = bySquad[0];
 
   return (
     <div data-testid="dashboard-nutritionist-view">
@@ -33,9 +42,9 @@ export default function NutritionistDashboard({ onOpenAthlete }) {
       <div className="mt-4">
         <AIInsight title="Fuelling compliance · this week" confidence={76} testId="ai-nutritionist">
           <p>
-            <strong>{drifting.length} athletes</strong> are drifting below 80% plan adherence. <strong>{ranked[0]?.name}</strong> ({adherence(ranked[0])}%)
-            is the priority — adherence dipped alongside his shoulder load spike. Arjun Sharma is holding at <strong>{adherence(athletes.find((a) => a.id === "SPR-014"))}%</strong>;
-            his rehab block needs the protein target held to protect lean mass during reduced training.
+            <strong>{drifting.length} athletes</strong> are drifting below 80% plan adherence — <strong>{ranked[0]?.name}</strong> ({adherence(ranked[0])}%)
+            is the priority for a fuelling check-in. At squad level, <strong>{lowestSquad?.squad}</strong> has the lowest average compliance
+            ({lowestSquad?.adherence}%) and would benefit from a group education session on meal timing and protein targets.
           </p>
         </AIInsight>
       </div>
@@ -76,39 +85,20 @@ export default function NutritionistDashboard({ onOpenAthlete }) {
           </CardBody>
         </Card>
 
-        <Card className="col-span-5" data-testid="nutritionist-trend">
-          <CardHeader title="Arjun · weekly adherence" subtitle="Plan compliance dipped over the rehab week" />
+        <Card className="col-span-5" data-testid="nutritionist-by-squad">
+          <CardHeader title="Adherence by squad" subtitle="Average plan compliance per group · target ≥ 80%" />
           <CardBody>
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={adherenceTrend} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="adhFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#1E40AF" stopOpacity={0.25} />
-                    <stop offset="100%" stopColor="#1E40AF" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="day" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} domain={[50, 100]} />
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={bySquad} layout="vertical" margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+                <CartesianGrid stroke="#F1F5F9" horizontal={false} />
+                <XAxis type="number" domain={[0, 100]} stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="squad" width={84} stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12 }} />
-                <ReferenceLine y={80} stroke="#DC2626" strokeDasharray="4 4" />
-                <Area type="monotone" dataKey="adherence" stroke="#1E40AF" strokeWidth={2.5} fill="url(#adhFill)" />
-              </AreaChart>
+                <ReferenceLine x={80} stroke="#DC2626" strokeDasharray="4 4" />
+                <Bar dataKey="adherence" radius={[0, 4, 4, 0]} fill="#1E40AF" />
+              </BarChart>
             </ResponsiveContainer>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="rounded-lg border border-slate-200 py-2">
-                <p className="text-base font-semibold text-slate-900">{NUTRITION_PLAN.kcalTarget}</p>
-                <p className="text-slate-500">kcal target</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 py-2">
-                <p className="text-base font-semibold text-slate-900">{NUTRITION_PLAN.macros.protein}g</p>
-                <p className="text-slate-500">protein</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 py-2">
-                <p className="text-base font-semibold text-slate-900">{NUTRITION_PLAN.macros.carbs}g</p>
-                <p className="text-slate-500">carbs</p>
-              </div>
-            </div>
+            <p className="mt-2 text-[11px] text-slate-500">Squads left of the dashed line are under the 80% compliance target.</p>
           </CardBody>
         </Card>
       </div>

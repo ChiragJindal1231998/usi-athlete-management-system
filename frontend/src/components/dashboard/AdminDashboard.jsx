@@ -19,6 +19,18 @@ export default function AdminDashboard({ onOpenAthlete }) {
     return { squad, count: members.length, injured, avgReadiness };
   });
 
+  // Org-level framing — name the squads carrying load, not individual athletes.
+  const loadedSquads = squads
+    .filter((s) => s.injured > 0)
+    .sort((a, b) => b.injured - a.injured)
+    .map((s) => s.squad);
+  const loadedLabel =
+    loadedSquads.length === 0
+      ? "no squad"
+      : loadedSquads.length === 1
+        ? loadedSquads[0]
+        : `${loadedSquads.slice(0, -1).join(", ")} and ${loadedSquads[loadedSquads.length - 1]}`;
+
   return (
     <div data-testid="dashboard-admin-view">
       <div className="grid grid-cols-4 gap-4">
@@ -32,9 +44,9 @@ export default function AdminDashboard({ onOpenAthlete }) {
         <AIInsight title="Federation health · this week" confidence={80} testId="ai-admin">
           <p>
             Across <strong>{stats.total} athletes</strong> in {squads.length} squads, availability is at{" "}
-            <strong>{Math.round((stats.available / stats.total) * 100)}%</strong>. The <strong>Throws</strong> and{" "}
-            <strong>Sprint A</strong> squads carry the active injury load — Sprint A driven by Arjun Sharma&rsquo;s
-            AI-flagged hamstring strain. No federation-wide compliance or registration breaches outstanding.
+            <strong>{Math.round((stats.available / stats.total) * 100)}%</strong> with <strong>{stats.injured}</strong> currently in rehab or
+            return-to-play. The <strong>{loadedLabel}</strong> {loadedSquads.length > 1 ? "squads" : "squad"} carry the active injury load.
+            No federation-wide compliance or registration breaches outstanding.
           </p>
         </AIInsight>
       </div>
