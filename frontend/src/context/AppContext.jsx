@@ -9,6 +9,7 @@ import {
   ONBOARDING_STAGES,
   FITNESS_TESTS,
 } from "@/data/seed";
+import { can as canDo, scopeAthletes, selfAthleteId, isFederationScope, SCOPE_LABEL } from "@/lib/access";
 
 const AppContext = createContext(null);
 
@@ -328,6 +329,23 @@ export function AppProvider({ children }) {
     return { total, available, injured, avgReadiness };
   }, [athletes]);
 
+  // ── Role-based access (data scope + capabilities) ──────────────────────────
+  // `can(capability)` gates action affordances; `scopedAthletes` narrows the
+  // visible roster to what the current role may see (athlete=self, coach=own
+  // squads, everyone else=federation). `me` is the signed-in athlete record
+  // when viewing as an athlete. See `@/lib/access`.
+  const can = useCallback((capability) => canDo(role, capability), [role]);
+
+  const scopedAthletes = useMemo(() => scopeAthletes(role, athletes), [role, athletes]);
+
+  const me = useMemo(() => {
+    const id = selfAthleteId(role);
+    return id ? athletes.find((a) => a.id === id) || null : null;
+  }, [role, athletes]);
+
+  const scopeLabel = SCOPE_LABEL[role] || "All athletes";
+  const federationScope = isFederationScope(role);
+
   const value = {
     role,
     setRole,
@@ -339,6 +357,11 @@ export function AppProvider({ children }) {
     attendance,
     fitnessTests,
     stats,
+    can,
+    scopedAthletes,
+    me,
+    scopeLabel,
+    federationScope,
     getAthlete,
     getInjuryByRegion,
     getInjuriesForAthlete,
