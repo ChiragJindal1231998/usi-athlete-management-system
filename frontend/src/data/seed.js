@@ -73,7 +73,7 @@ export const ATHLETES_SEED = [
   { id: "ATH-021", name: "Vikas Nair", age: 25, sport: "Athletics", event: "Decathlon", squad: "Combined", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 81, acwr: 1.04, docsVerified: true, onboarding: "active", tags: [], talentScore: 74, nutritionAdherence: 88 },
   { id: "SPR-018", name: "Manish Reddy", age: 20, sport: "Athletics", event: "100m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "rehab", readiness: 64, acwr: 0.91, docsVerified: true, onboarding: "active", tags: ["Injury watch"], talentScore: 80, nutritionAdherence: 80 },
   { id: "HUR-007", name: "Devika Rao", age: 23, sport: "Athletics", event: "100m hurdles", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 88, acwr: 1.12, docsVerified: true, onboarding: "active", tags: ["Elite prospect"], talentScore: 85, nutritionAdherence: 93 },
-  { id: "SPR-022", name: "Neha Joshi", age: 22, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 75, acwr: 1.22, docsVerified: true, onboarding: "active", tags: [], talentScore: 76, nutritionAdherence: 86 },
+  { id: "SPR-022", name: "Neha Joshi", age: 22, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "injured", readiness: 61, acwr: 1.22, docsVerified: true, onboarding: "active", tags: ["Injury watch"], talentScore: 76, nutritionAdherence: 86 },
   { id: "JMP-012", name: "Pooja Shah", age: 21, sport: "Athletics", event: "Triple jump", squad: "Jumps", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 77, acwr: 1.14, docsVerified: true, onboarding: "active", tags: [], talentScore: 73, nutritionAdherence: 82 },
   { id: "THR-003", name: "Sandeep Yadav", age: 26, sport: "Athletics", event: "Shot put", squad: "Throws", coach: "Anil Khanna", physio: "Dr Rao", status: "injured", readiness: 52, acwr: 1.41, docsVerified: true, onboarding: "active", tags: ["Injury watch", "Load watch"], talentScore: 70, nutritionAdherence: 64 },
   { id: "SPR-031", name: "Anjali Mehta", age: 19, sport: "Athletics", event: "100m sprint", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 82, acwr: 1.07, docsVerified: false, onboarding: "pending", tags: ["Development squad"], talentScore: 75, nutritionAdherence: 79 },
@@ -151,6 +151,44 @@ export const INJURIES_SEED = [
       { date: "2025-02-08", stage: "Under treatment", author: "Dr Rao", note: "Pain on resisted external rotation, mild swelling. Scapular control work + manual therapy. Throwing paused." },
     ],
   },
+  {
+    id: "INJ-1004",
+    athleteId: "SPR-002",
+    region: "left-shin",
+    diagnosis: "Calf strain, grade 1",
+    mechanism: "Tempo session, cumulative fatigue",
+    severity: "cleared",
+    grade: 1,
+    reportedOn: "2025-01-08",
+    daysOut: 0,
+    stage: "Cleared",
+    notes: "Fully recovered. Discharged after symptom-free RTP block.",
+    aiPredicted: false,
+    history: [
+      { date: "2025-01-08", stage: "Reported", author: "Dr Rao", note: "Mild left calf tightness reported after Wednesday tempo. No structural damage on ultrasound." },
+      { date: "2025-01-12", stage: "Under treatment", author: "Dr Rao", note: "Soft-tissue work + calf loading. Pain 2/10, resolving fast." },
+      { date: "2025-01-18", stage: "Rehab", author: "Dr Rao", note: "Calf raise progression to 90% baseline. Reintroduced strides." },
+      { date: "2025-01-24", stage: "Return-to-play", author: "Dr Rao", note: "Full-speed running tolerated, symptom-free." },
+      { date: "2025-01-28", stage: "Cleared", author: "Dr Rao", note: "Discharged — back to full sprint training with no restrictions." },
+    ],
+  },
+  {
+    id: "INJ-1005",
+    athleteId: "SPR-022",
+    region: "left-thigh",
+    diagnosis: "Hamstring tightness (low-grade)",
+    mechanism: "ACWR drift, accumulating fatigue",
+    severity: "mild",
+    grade: 1,
+    reportedOn: "2025-02-15",
+    daysOut: 2,
+    stage: "Reported",
+    notes: "Precautionary flag — AI had been tracking a steady ACWR drift.",
+    aiPredicted: true,
+    history: [
+      { date: "2025-02-15", stage: "Reported", author: "Dr Rao", note: "Neha reported left hamstring tightness after Friday flys. AI had flagged a 3-week ACWR drift (1.05 → 1.22). Holding her out of max-velocity work as a precaution; MRI not indicated." },
+    ],
+  },
 ];
 
 export const REHAB_STAGES = [
@@ -199,6 +237,7 @@ export const ALERTS_SEED = [
   { id: "AL-01", athleteId: "SPR-014", severity: "severe", title: "Elevated hamstring risk", detail: "ACWR 1.52 · 78% predicted risk · 4-day window", priority: 1, aiGenerated: true, status: "active" },
   { id: "AL-02", athleteId: "THR-003", severity: "moderate", title: "Shoulder load spike", detail: "Throwing volume +38% over baseline", priority: 2, aiGenerated: true, status: "active" },
   { id: "AL-03", athleteId: "JMP-009", severity: "mild", title: "Sleep deficit trend", detail: "3 nights below 6.5h — monitor", priority: 3, aiGenerated: true, status: "active" },
+  { id: "AL-04", athleteId: "SPR-022", severity: "mild", title: "ACWR drift flagged", detail: "Steady climb 1.05 → 1.22 over 3 weeks", priority: 4, aiGenerated: true, status: "active" },
 ];
 
 export const READINESS_TREND = [
@@ -242,6 +281,9 @@ export const FITNESS_TESTS = [
   { athleteId: "SPR-018", athleteName: "Manish Reddy", sprint30: 3.82, sprint60: 6.79, cmj: 56.1, broadJump: 298, benchmark: "National" },
   { athleteId: "HUR-007", athleteName: "Devika Rao", sprint30: 3.90, sprint60: 6.92, cmj: 50.4, broadJump: 270, benchmark: "National" },
   { athleteId: "JMP-009", athleteName: "Aditya Patel", sprint30: 3.86, sprint60: 6.85, cmj: 60.2, broadJump: 312, benchmark: "Elite" },
+  { athleteId: "SPR-022", athleteName: "Neha Joshi", sprint30: 3.88, sprint60: 6.88, cmj: 49.6, broadJump: 268, benchmark: "National" },
+  { athleteId: "ATH-021", athleteName: "Vikas Nair", sprint30: 4.02, sprint60: 7.18, cmj: 47.1, broadJump: 255, benchmark: "Developing" },
+  { athleteId: "ATH-040", athleteName: "Ritu Kapoor", sprint30: 4.11, sprint60: 7.34, cmj: 44.8, broadJump: 242, benchmark: "Developing" },
 ];
 
 export const TALENT_PROGRESSION = [
@@ -282,11 +324,11 @@ export const COPILOT_SUGGESTIONS = [
 
 export const COPILOT_ANSWERS = {
   "which athletes are at injury risk this week?":
-    "Three athletes flagged. **Arjun Sharma (SPR-014)** — already rehabbing a grade 2 hamstring, not retrievable until ~10 Mar. **Sandeep Yadav (THR-003)** — shoulder load +38% over baseline, predicted moderate risk (62%). **Aditya Patel (JMP-009)** — sleep deficit trend across 3 nights, watch for accumulating fatigue. Recommend reducing Aditya's Wednesday plyometric block by ~30%.",
+    "Three athletes flagged, plus one new precautionary watch. **Arjun Sharma (SPR-014)** — already rehabbing a grade 2 hamstring, not retrievable until ~10 Mar. **Sandeep Yadav (THR-003)** — shoulder load +38% over baseline, predicted moderate risk (62%). **Aditya Patel (JMP-009)** — sleep deficit trend across 3 nights, watch for accumulating fatigue. New: **Neha Joshi (SPR-022)** reported low-grade hamstring tightness after a 3-week ACWR drift (1.05 → 1.22) — held out of max-velocity work. Recommend reducing Aditya's Wednesday plyometric block by ~30%.",
   "how is arjun's rehab tracking?":
     "Arjun is on **day 14** of rehab for a right-hamstring grade 2 strain. Currently in the **Rehab** stage (3 of 5). Eccentric strength is at 78% of left-leg baseline (target: 90%). HRV recovered to 56 ms, sleep back to 7.5 h. Estimated return-to-play: **8–12 days**. Confidence: high.",
   "summarise sprint squad readiness":
-    "Sprint A average readiness is **74** (down 6 pts week-over-week, driven mostly by Arjun). Sprint B is at **84**. Only Devika Rao (88) and Anjali Mehta (82) are above the elite threshold. Three athletes — Arjun, Manish, Sandeep — are non-competing.",
+    "Sprint A average readiness is **67** (down sharply week-over-week — Arjun, Manish and now Neha are all carrying load). Sprint B is at **83**. Only Devika Rao (88) and Anjali Mehta (82) are above the elite threshold. Three Sprint A athletes — Arjun, Manish and Neha — are non-competing this week.",
   "who should reduce training load?":
     "Two clear candidates. **Sandeep Yadav** (ACWR 1.41) — reduce throwing volume by 25–30% this week. **Aditya Patel** (ACWR 1.31, sleep deficit) — swap Saturday hills for tempo work. Arjun's plan is already adjusted to recovery only.",
   "compare arjun's 30m to squad average":
@@ -304,7 +346,7 @@ export const ATTENDANCE_SEED = {
     { athleteId: "SPR-005", status: "present" },
     { athleteId: "SPR-018", status: "excused", note: "RTP progression" },
     { athleteId: "HUR-007", status: "present" },
-    { athleteId: "SPR-022", status: "late", note: "Arrived 15 min late" },
+    { athleteId: "SPR-022", status: "excused", note: "Held out — hamstring precaution" },
     { athleteId: "SPR-031", status: "present" },
     { athleteId: "ATH-040", status: "absent", note: "Unexcused" },
   ],
