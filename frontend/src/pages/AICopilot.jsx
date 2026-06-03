@@ -18,14 +18,28 @@ function sessionId() {
   return id;
 }
 
+// Self-focused prompts for the athlete; staff get the squad-wide set from seed.
+const ATHLETE_SUGGESTIONS = [
+  "How is my rehab progressing?",
+  "What should my training load look like this week?",
+  "Why is my readiness below baseline?",
+  "What nutrition targets should I hit today?",
+];
+
 export default function AICopilot() {
-  const { stats, athletes, injuries, alerts } = useApp();
+  const { stats, athletes, injuries, alerts, scopedAthletes, me } = useApp();
+  // Athletes only ever see their own record; staff see their full scope.
+  const scopedIds = new Set(scopedAthletes.map((a) => a.id));
+  const ctxAthletes = me ? scopedAthletes : athletes;
+  const ctxInjuries = me ? injuries.filter((i) => scopedIds.has(i.athleteId)) : injuries;
+  const suggestions = me ? ATHLETE_SUGGESTIONS : COPILOT_SUGGESTIONS;
   const [messages, setMessages] = useState([
     {
       id: "msg-welcome",
       role: "assistant",
-      text:
-        "Hi — I'm the AMS copilot, powered by Claude Sonnet 4.5 and grounded on live squad data. Ask me anything about your athletes, training load, readiness or injuries.",
+      text: me
+        ? `Hi ${me.name.split(" ")[0]} — I'm your AMS copilot, powered by Claude Sonnet 4.5. Ask me about your rehab, training load, readiness or fuelling. I only ever see your own data.`
+        : "Hi — I'm the AMS copilot, powered by Claude Sonnet 4.5 and grounded on live squad data. Ask me anything about your athletes, training load, readiness or injuries.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -39,10 +53,14 @@ export default function AICopilot() {
   }, [messages, streaming]);
 
   const buildContext = () => ({
-    stats,
-    athletes,
-    injuries,
-    alerts: alerts.filter((a) => a.status === "active"),
+    // For an athlete, scope the grounding snapshot to their own record so the
+    // model can only ever answer about them; staff get their full scope.
+    stats: me
+      ? { total: 1, available: me.status === "available" ? 1 : 0, injured: me.status === "available" ? 0 : 1, avgReadiness: me.readiness }
+      : stats,
+    athletes: ctxAthletes,
+    injuries: ctxInjuries,
+    alerts: me ? [] : alerts.filter((a) => a.status === "active"),
   });
 
   const buildHistory = () =>
@@ -146,7 +164,7 @@ export default function AICopilot() {
     <div data-testid="copilot-page">
       <PageHeader
         title="AI copilot"
-        subtitle="Live answers from Claude Sonnet 4.5, grounded on your current squad data"
+        subtitle={me ? "Live answers from Claude Sonnet 4.5, scoped to your own record" : "Live answers from Claude Sonnet 4.5, grounded on your current squad data"}
         action={
           <div className="flex items-center gap-2 rounded-lg border border-[#1E40AF]/20 bg-[#EFF6FF] px-3 py-1.5 text-xs">
             <span className="ai-pulse-dot h-1.5 w-1.5 rounded-full bg-[#1E40AF]" />
@@ -194,7 +212,7 @@ export default function AICopilot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Ask about athletes, training load, readiness, injuries…"
+                placeholder={me ? "Ask about your rehab, load, readiness, fuelling…" : "Ask about athletes, training load, readiness, injuries…"}
                 disabled={streaming}
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 disabled:opacity-60"
               />
@@ -208,7 +226,9 @@ export default function AICopilot() {
               </button>
             </div>
             <p className="mt-1.5 px-1 text-[10px] text-slate-400">
-              Claude Sonnet 4.5 is grounded on the current snapshot of athletes, injuries and alerts.
+              {me
+                ? "Claude Sonnet 4.5 is scoped to your own record only — it cannot see other athletes."
+                : "Claude Sonnet 4.5 is grounded on the current snapshot of athletes, injuries and alerts."}
             </p>
           </div>
         </Card>
@@ -216,7 +236,7 @@ export default function AICopilot() {
         <Card className="col-span-4 h-fit">
           <CardBody className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Suggested questions</p>
-            {COPILOT_SUGGESTIONS.map((s, i) => (
+            {suggestions.map((s, i) => (
               <button
                 key={i}
                 data-testid={`suggest-${i}`}

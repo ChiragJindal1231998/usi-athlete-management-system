@@ -9,10 +9,11 @@ import { toast } from "sonner";
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, ComposedChart, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea,
 } from "recharts";
+import { ScopeNote } from "@/components/shared/ScopeNote";
 
 export default function SportsScience() {
-  const { athletes } = useApp();
-  const arjun = athletes.find((a) => a.id === "SPR-014");
+  const { athletes, me, scopeLabel } = useApp();
+  const arjun = (me && me.hrv ? me : null) || athletes.find((a) => a.id === "SPR-014") || athletes[0];
 
   const loadData = arjun.weeklyLoad.map((w, idx) => ({ week: `W${idx + 1}`, load: w }));
   const hrvData = arjun.hrv.map((h, idx) => ({ day: `D${idx + 1}`, hrv: h }));
@@ -27,6 +28,12 @@ export default function SportsScience() {
       <PageHeader
         title="Sports science"
         subtitle="Readiness, fatigue and recovery analytics — the data feed behind the injury predictions"
+      />
+
+      <ScopeNote
+        scopeLabel={me ? "My readiness & recovery data" : scopeLabel}
+        readOnly
+        note={me ? "your wearable feed — read-only" : "monitoring view"}
       />
 
       <div className="grid grid-cols-4 gap-4">

@@ -6,10 +6,12 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { NUTRITION_PLAN } from "@/data/seed";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Droplet, Pill, UtensilsCrossed } from "lucide-react";
+import { ScopeNote } from "@/components/shared/ScopeNote";
 
 export default function Nutrition() {
-  const { athletes } = useApp();
-  const arjun = athletes.find((a) => a.id === "SPR-014");
+  const { athletes, me, can, scopeLabel } = useApp();
+  const arjun = me || athletes.find((a) => a.id === "SPR-014") || athletes[0];
+  const canEdit = can("nutrition.edit");
 
   const adherenceData = NUTRITION_PLAN.adherenceWeek.map((v, i) => ({ day: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i], adherence: v }));
   const hydration = NUTRITION_PLAN.hydrationLitres.map((v, i) => ({ day: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i], litres: v }));
@@ -19,7 +21,13 @@ export default function Nutrition() {
     <div data-testid="nutrition-page">
       <PageHeader
         title="Nutrition"
-        subtitle="Diet plans, hydration, supplements and body composition trends"
+        subtitle={me ? "My fuelling plan, hydration and body composition" : `Fuelling plan · ${arjun?.name || "athlete"}`}
+      />
+
+      <ScopeNote
+        scopeLabel={me ? "My fuelling plan" : scopeLabel}
+        readOnly={!canEdit}
+        note={canEdit ? "you can adjust this plan" : me ? "log meals from your dashboard" : "plan edits are nutritionist-only"}
       />
 
       <div className="grid grid-cols-4 gap-4">
