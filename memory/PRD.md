@@ -15,14 +15,16 @@ High-fidelity, production-feel prototype of an enterprise SaaS — the Athlete M
 
 ## Core requirements implemented
 1. **Dashboard / Command center (role-differentiated)** — `Dashboard.jsx` is a thin router that dispatches by `role` to one of eight purpose-built views under `components/dashboard/` (each takes `onOpenAthlete` and reuses StatCard / Card / AIInsight / StatusBadge / shared widgets), with a role-aware `PageHeader` surfacing the persona's scope and a `role-context-chip`:
-   - **Admin** — org-wide: squad breakdown (computed headcount/availability/avg readiness), active alerts, participation-by-program chart.
+   - **Admin** — org-wide: squad breakdown (computed headcount/availability/avg readiness), active alerts, participation-by-program chart. AI insight is org-level (names the squads carrying injury load, computed — no single-athlete callout).
    - **Director** — selection pool (top talent scores), trending up/down, readiness trend (squad vs Arjun).
    - **Coach** — Sprint A squad: today's session + live attendance counts, squad ACWR bars (1.3 reference line), attention-first roster.
    - **Physio** — return-to-play queue (Arjun first, ordered by attention) with per-case stage progress, wellness flags.
-   - **Scientist** — ACWR band chart + Arjun HRV trend, anomaly-detection insight, highest-mechanical-risk ranking.
-   - **Nutritionist** — adherence-by-athlete (lowest first, drift detection) + Arjun weekly adherence trend and macro targets.
+   - **Scientist** — squad-framed: per-athlete ACWR band chart, squad load-vs-readiness scatter (danger quadrant), squad anomaly-detection insight (highest-ACWR cases, not Arjun-centric), highest-mechanical-risk ranking.
+   - **Nutritionist** — squad fuelling compliance only (no injury/rehab content): adherence-by-athlete (lowest first, drift detection) + adherence-by-squad chart vs the 80% target.
    - **Ops** — onboarding pipeline (funnel + per-athlete advance), document-verification queue, week's schedule.
-   - **Athlete** — phone-framed mobile self-view (Arjun): readiness ring, rehab progress + milestone timeline, today's plan, wellness check-in, fuelling, tappable task list.
+   - **Athlete** — single responsive self-view (Arjun, no phone frame): stacks on mobile, flows into a two-column `md:` grid from 768px. Readiness ring, rehab progress + milestone timeline, today's plan, wellness check-in, fuelling, tappable task list. Uses the standard dashboard PageHeader.
+
+   **Per-persona tailoring rule:** Arjun's injury story appears only where it is genuinely relevant to that role — Physio (front and centre), Coach (one alert item) and Director (one of several flagged). Admin, Scientist, Nutritionist and Ops views are framed squad-wide / org-wide and do not centre Arjun.
 2. **Athletes** — registry DataTable for 12 athletes, search + status filter + **tag filter**, **tags column**. Click-row drawer with Overview / Training / Medical / Documents tabs; Overview tab now manages **athlete tags** (add via dropdown from `ATHLETE_TAGS`, remove via chip ✕) and shows an **onboarding-pipeline advance** button (invited → pending → review → active; reaching active sets `docsVerified`). 4-step onboarding dialog that adds a real new athlete row.
 3. **Training & periodisation** — macro→meso→micro timeline, current microcycle with load bars, AI load-reduction Insight with **Accept** button that swaps Friday/Saturday to recovery (real state change). ACWR 8-week chart with sweet-spot band. Exercise-library session builder. **Session attendance roster** — per-athlete present/late/absent/excused toggles with live count summary (real state via `setAttendanceStatus`).
 4. **Medical & injury (priority)** — fully interactive SVG body map (20 regions), Arjun's right thigh pre-coloured rehab-blue. Detail panel with AI prediction record, **5-stage RTP tracker** (Reported → Under treatment → Rehab → Return-to-play → Cleared) advanced via real state mutation; reaching Cleared turns region green and sets athlete to available. Healthy regions show mild/moderate/severe Report buttons that immediately colour the region. **Clinical timeline** per injury (history entries) with an **add-note** input that appends real entries; stage advances and new reports also append to the timeline. Squad injury log table + wellness check-ins chart.
@@ -49,4 +51,4 @@ High-fidelity, production-feel prototype of an enterprise SaaS — the Athlete M
 - P2: Calendar view for training periodisation (drag/drop sessions)
 - P2: Real wearable-device API integration (currently a UI stub)
 
-Last updated: 2026-06
+Last updated: 2026-06 (per-persona dashboard tailoring + responsive athlete view)
