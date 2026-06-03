@@ -1,5 +1,13 @@
 # USI · Athlete Management System (AMS)
 
+> **Repository:** [github.com/ChiragJindal1231998/usi-athlete-management-system](https://github.com/ChiragJindal1231998/usi-athlete-management-system)
+>
+> ```bash
+> git clone https://github.com/ChiragJindal1231998/usi-athlete-management-system.git
+> ```
+>
+> Found a bug or want to suggest a feature? [Open an issue](https://github.com/ChiragJindal1231998/usi-athlete-management-system/issues).
+
 A high-fidelity, production-feel prototype of an enterprise SaaS used by sports
 federations, Olympic programs, and high-performance centres to manage athletes
 end to end — registration, training, injury & rehab, sports science, nutrition,
