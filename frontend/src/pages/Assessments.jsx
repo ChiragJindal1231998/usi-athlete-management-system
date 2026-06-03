@@ -13,11 +13,15 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { ScopeNote } from "@/components/shared/ScopeNote";
 
 const EMPTY = { athleteId: "", sprint30: "", sprint60: "", cmj: "", broadJump: "", benchmark: "National" };
 
 export default function Assessments() {
-  const { athletes, fitnessTests, addFitnessTest } = useApp();
+  const { scopedAthletes: athletes, fitnessTests: allTests, addFitnessTest, can, scopeLabel } = useApp();
+  const canRecord = can("assessment.record");
+  const scopedIds = new Set(athletes.map((a) => a.id));
+  const fitnessTests = allTests.filter((t) => scopedIds.has(t.athleteId));
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(EMPTY);
 
@@ -48,7 +52,7 @@ export default function Assessments() {
       <PageHeader
         title="Assessments & TID"
         subtitle="Fitness testing, talent identification and progression analytics"
-        action={
+        action={canRecord && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button data-testid="add-test-result" className="bg-[#1E40AF] hover:bg-[#1E3A8A]">
@@ -108,8 +112,10 @@ export default function Assessments() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        }
+        )}
       />
+
+      <ScopeNote scopeLabel={scopeLabel} readOnly={!canRecord} note={canRecord ? undefined : "recording results is restricted to performance staff"} />
 
       <div className="grid grid-cols-12 gap-4">
         <Card className="col-span-8">

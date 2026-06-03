@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Check, Activity, GripVertical, CalendarDays } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from "recharts";
 import { toast } from "sonner";
+import { ScopeNote } from "@/components/shared/ScopeNote";
 
 const SESSION_TYPE_STYLE = {
   Speed: "bg-[#DBEAFE] text-[#1D4ED8] border-[#60A5FA]/50",
@@ -27,8 +28,12 @@ const ATTENDANCE_OPTIONS = [
 ];
 
 export default function Training() {
-  const { microPlan, aiLoadAccepted, acceptAILoadReduction, athletes, moveSession, attendance, setAttendanceStatus } = useApp();
-  const arjun = athletes.find((a) => a.id === "SPR-014");
+  const { microPlan, aiLoadAccepted, acceptAILoadReduction, athletes, moveSession, attendance, setAttendanceStatus, can, scopeLabel } = useApp();
+  const canAcceptAI = can("training.acceptAI");
+  const canAttendance = can("training.attendance");
+  const canMove = can("training.moveSession");
+  const planWrite = canAcceptAI || canAttendance || canMove;
+  const arjun = athletes.find((a) => a.id === "SPR-014") || athletes[0];
   const attCounts = attendance.roster.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {});
   const [selectedSession, setSelectedSession] = useState(null);
   const [builderItems, setBuilderItems] = useState([]);
@@ -48,6 +53,8 @@ export default function Training() {
         title="Training & periodisation"
         subtitle="Macro → meso → micro planning, with workload monitoring"
       />
+
+      <ScopeNote scopeLabel={scopeLabel} readOnly={!planWrite} note={planWrite ? undefined : "plan & attendance edits are coach-only"} />
 
       <Card>
         <CardHeader title={PERIODISATION.macroLabel} subtitle="Mesocycle timeline" />
@@ -89,7 +96,7 @@ export default function Training() {
             subtitle={
               <span className="flex items-center gap-1.5 text-xs text-slate-500">
                 <CalendarDays className="h-3 w-3" />
-                Drag any session card across days to reorder · {aiLoadAccepted ? "AI-adjusted plan applied" : "Standard plan"}
+                {canMove ? "Drag any session card across days to reorder · " : "Tap a card for detail · "}{aiLoadAccepted ? "AI-adjusted plan applied" : "Standard plan"}
               </span>
             }
           />
@@ -103,9 +110,10 @@ export default function Training() {
                   <div
                     key={d.day}
                     data-testid={`day-${d.day}`}
-                    onDragOver={(e) => { e.preventDefault(); setDragOver(idx); }}
+                    onDragOver={(e) => { if (!canMove) return; e.preventDefault(); setDragOver(idx); }}
                     onDragLeave={() => setDragOver((v) => (v === idx ? null : v))}
                     onDrop={(e) => {
+                      if (!canMove) return;
                       e.preventDefault();
                       if (dragFrom !== null && dragFrom !== idx) {
                         moveSession(dragFrom, idx);
@@ -121,16 +129,16 @@ export default function Training() {
                       <span className="text-[10px] text-slate-400">{d.load}</span>
                     </div>
                     <div
-                      draggable
-                      onDragStart={() => setDragFrom(idx)}
+                      draggable={canMove}
+                      onDragStart={() => canMove && setDragFrom(idx)}
                       onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
                       onClick={() => setSelectedSession(d)}
                       data-testid={`session-card-${d.day}`}
-                      className={`group flex-1 cursor-grab rounded-md border bg-white p-3 shadow-sm transition-all active:cursor-grabbing ${typeStyle} ${isDragging ? "opacity-50 ring-2 ring-[#1E40AF]" : "hover:shadow-md"}`}
+                      className={`group flex-1 rounded-md border bg-white p-3 shadow-sm transition-all ${canMove ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${typeStyle} ${isDragging ? "opacity-50 ring-2 ring-[#1E40AF]" : "hover:shadow-md"}`}
                     >
                       <div className="mb-1.5 flex items-center justify-between">
                         <span className={`rounded-full bg-white/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider`}>{d.type}</span>
-                        <GripVertical className="h-3 w-3 opacity-30 group-hover:opacity-70" />
+                        {canMove && <GripVertical className="h-3 w-3 opacity-30 group-hover:opacity-70" />}
                       </div>
                       <p className="text-[11px] font-medium leading-snug">{d.session}</p>
                       <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/60">
@@ -178,22 +186,28 @@ export default function Training() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      {ATTENDANCE_OPTIONS.map((opt) => {
-                        const active = r.status === opt.value;
-                        return (
-                          <button
-                            key={opt.value}
-                            data-testid={`attendance-${r.athleteId}-${opt.value}`}
-                            onClick={() => {
-                              setAttendanceStatus(r.athleteId, opt.value);
-                              toast.success(`${ath.name} marked ${opt.label.toLowerCase()}`);
-                            }}
-                            className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${active ? opt.style : "border-slate-200 bg-white text-slate-400 hover:bg-slate-50"}`}
-                          >
-                            {opt.label}
-                          </button>
-                        );
-                      })}
+                      {canAttendance ? (
+                        ATTENDANCE_OPTIONS.map((opt) => {
+                          const active = r.status === opt.value;
+                          return (
+                            <button
+                              key={opt.value}
+                              data-testid={`attendance-${r.athleteId}-${opt.value}`}
+                              onClick={() => {
+                                setAttendanceStatus(r.athleteId, opt.value);
+                                toast.success(`${ath.name} marked ${opt.label.toLowerCase()}`);
+                              }}
+                              className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${active ? opt.style : "border-slate-200 bg-white text-slate-400 hover:bg-slate-50"}`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <StatusBadge variant={r.status === "present" ? "cleared" : r.status === "absent" ? "severe" : r.status === "late" ? "mild" : "healthy"}>
+                          {r.status}
+                        </StatusBadge>
+                      )}
                     </div>
                   </div>
                 );
@@ -214,7 +228,7 @@ export default function Training() {
                 <span className="inline-flex items-center gap-1 rounded-md bg-[#D1FAE5] px-2.5 py-1.5 text-xs font-medium text-[#065F46]">
                   <Check className="h-3.5 w-3.5" /> Plan adjusted
                 </span>
-              ) : (
+              ) : canAcceptAI ? (
                 <Button
                   data-testid="accept-ai-load"
                   size="sm"
@@ -223,6 +237,8 @@ export default function Training() {
                 >
                   Accept recommendation
                 </Button>
+              ) : (
+                <span className="text-xs text-slate-400">Coach decision pending</span>
               )
             }
           >
@@ -313,15 +329,17 @@ export default function Training() {
                 );
               })}
             </div>
-            <Button
-              data-testid="assign-session"
-              size="sm"
-              className="w-full bg-[#1E40AF] hover:bg-[#1E3A8A]"
-              disabled={builderItems.length === 0}
-              onClick={() => { toast.success(`Session assigned · ${builderItems.length} exercises`); setBuilderItems([]); }}
-            >
-              <Plus className="mr-1 h-3.5 w-3.5" /> Assign to Sprint A
-            </Button>
+            {canMove && (
+              <Button
+                data-testid="assign-session"
+                size="sm"
+                className="w-full bg-[#1E40AF] hover:bg-[#1E3A8A]"
+                disabled={builderItems.length === 0}
+                onClick={() => { toast.success(`Session assigned · ${builderItems.length} exercises`); setBuilderItems([]); }}
+              >
+                <Plus className="mr-1 h-3.5 w-3.5" /> Assign to Sprint A
+              </Button>
+            )}
           </CardBody>
         </Card>
       </div>

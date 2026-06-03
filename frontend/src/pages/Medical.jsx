@@ -13,10 +13,18 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Check, ArrowRight, Activity, Calendar, Plus } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
+import { ScopeNote } from "@/components/shared/ScopeNote";
 
 export default function Medical() {
-  const { athletes, injuries, getInjuryByRegion, advanceInjuryStage, reportInjury, addInjuryNote } = useApp();
-  const [selectedAthleteId, setSelectedAthleteId] = useState("SPR-014");
+  const { scopedAthletes: athletes, injuries: allInjuries, getInjuryByRegion, advanceInjuryStage, reportInjury, addInjuryNote, can, scopeLabel } = useApp();
+  const canReport = can("injury.report");
+  const canAdvance = can("injury.advance");
+  const canNote = can("injury.note");
+  const clinicalWrite = canReport || canAdvance || canNote;
+  // Scope the injury list to athletes the role may see.
+  const scopedIds = new Set(athletes.map((a) => a.id));
+  const injuries = allInjuries.filter((i) => scopedIds.has(i.athleteId));
+  const [selectedAthleteId, setSelectedAthleteId] = useState(athletes[0]?.id || "SPR-014");
   const [selectedRegion, setSelectedRegion] = useState("right-thigh");
   const [noteText, setNoteText] = useState("");
 
@@ -65,6 +73,8 @@ export default function Medical() {
         }
       />
 
+      <ScopeNote scopeLabel={scopeLabel} readOnly={!clinicalWrite} note={clinicalWrite ? undefined : "clinical actions are physio-only"} />
+
       <div className="grid grid-cols-12 gap-4">
         <Card className="col-span-5">
           <CardHeader
@@ -99,13 +109,19 @@ export default function Medical() {
               <div className="space-y-4">
                 <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
                   <p className="font-medium text-slate-900">No active injury on this region</p>
-                  <p className="mt-1 text-xs">Report an injury below — body region will update immediately.</p>
+                  <p className="mt-1 text-xs">
+                    {canReport
+                      ? "Report an injury below — body region will update immediately."
+                      : "Only the medical team can report injuries from this view."}
+                  </p>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button data-testid="report-mild" variant="outline" className="border-[#D97706]/40 text-[#92400E] hover:bg-[#FEF3C7]" onClick={() => handleReport("mild")}>Report mild</Button>
-                  <Button data-testid="report-moderate" variant="outline" className="border-[#EA580C]/40 text-[#9A3412] hover:bg-[#FED7AA]" onClick={() => handleReport("moderate")}>Report moderate</Button>
-                  <Button data-testid="report-severe" variant="outline" className="border-[#DC2626]/40 text-[#991B1B] hover:bg-[#FECACA]" onClick={() => handleReport("severe")}>Report severe</Button>
-                </div>
+                {canReport && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button data-testid="report-mild" variant="outline" className="border-[#D97706]/40 text-[#92400E] hover:bg-[#FEF3C7]" onClick={() => handleReport("mild")}>Report mild</Button>
+                    <Button data-testid="report-moderate" variant="outline" className="border-[#EA580C]/40 text-[#9A3412] hover:bg-[#FED7AA]" onClick={() => handleReport("moderate")}>Report moderate</Button>
+                    <Button data-testid="report-severe" variant="outline" className="border-[#DC2626]/40 text-[#991B1B] hover:bg-[#FECACA]" onClick={() => handleReport("severe")}>Report severe</Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -162,20 +178,22 @@ export default function Medical() {
                   </div>
                   <div className="mt-4 flex items-center justify-between rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
                     <span>{injury.notes}</span>
-                    <Button
-                      data-testid="advance-stage"
-                      size="sm"
-                      className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
-                      disabled={injury.stage === "Cleared"}
-                      onClick={() => {
-                        advanceInjuryStage(injury.id);
-                        const nextIdx = Math.min(stageIdx + 1, REHAB_STAGES.length - 1);
-                        toast.success(`Advanced to · ${REHAB_STAGES[nextIdx]}`);
-                      }}
-                    >
-                      {injury.stage === "Cleared" ? "Cleared" : "Advance stage"}
-                      {injury.stage !== "Cleared" && <ArrowRight className="ml-1 h-3.5 w-3.5" />}
-                    </Button>
+                    {canAdvance && (
+                      <Button
+                        data-testid="advance-stage"
+                        size="sm"
+                        className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+                        disabled={injury.stage === "Cleared"}
+                        onClick={() => {
+                          advanceInjuryStage(injury.id);
+                          const nextIdx = Math.min(stageIdx + 1, REHAB_STAGES.length - 1);
+                          toast.success(`Advanced to · ${REHAB_STAGES[nextIdx]}`);
+                        }}
+                      >
+                        {injury.stage === "Cleared" ? "Cleared" : "Advance stage"}
+                        {injury.stage !== "Cleared" && <ArrowRight className="ml-1 h-3.5 w-3.5" />}
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -202,35 +220,37 @@ export default function Medical() {
                       </div>
                     ))}
                   </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Input
-                      data-testid="injury-note-input"
-                      value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && noteText.trim()) {
+                  {canNote && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Input
+                        data-testid="injury-note-input"
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && noteText.trim()) {
+                            addInjuryNote(injury.id, noteText);
+                            setNoteText("");
+                            toast.success("Clinical note added");
+                          }
+                        }}
+                        placeholder="Add a clinical note…"
+                        className="h-9 text-sm"
+                      />
+                      <Button
+                        data-testid="add-injury-note"
+                        size="sm"
+                        className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+                        disabled={!noteText.trim()}
+                        onClick={() => {
                           addInjuryNote(injury.id, noteText);
                           setNoteText("");
                           toast.success("Clinical note added");
-                        }
-                      }}
-                      placeholder="Add a clinical note…"
-                      className="h-9 text-sm"
-                    />
-                    <Button
-                      data-testid="add-injury-note"
-                      size="sm"
-                      className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
-                      disabled={!noteText.trim()}
-                      onClick={() => {
-                        addInjuryNote(injury.id, noteText);
-                        setNoteText("");
-                        toast.success("Clinical note added");
-                      }}
-                    >
-                      <Plus className="mr-1 h-3.5 w-3.5" /> Add note
-                    </Button>
-                  </div>
+                        }}
+                      >
+                        <Plus className="mr-1 h-3.5 w-3.5" /> Add note
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

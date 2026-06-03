@@ -26,7 +26,8 @@ function csvEscape(v) {
 }
 
 export default function Analytics() {
-  const { athletes } = useApp();
+  const { athletes, can } = useApp();
+  const canExport = can("analytics.export");
   const [drillIdx, setDrillIdx] = useState(0);
   const [exported, setExported] = useState(false);
 
@@ -93,7 +94,7 @@ export default function Analytics() {
       <PageHeader
         title="Analytics & BI"
         subtitle="Federation-level reporting with drill-down to squad and athlete"
-        action={
+        action={canExport && (
           <Button
             data-testid="export-report"
             className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
@@ -101,7 +102,7 @@ export default function Analytics() {
           >
             {exported ? <><Check className="mr-1.5 h-4 w-4" /> Report ready</> : <><Download className="mr-1.5 h-4 w-4" /> Export report</>}
           </Button>
-        }
+        )}
       />
 
       {/* Drill-down breadcrumb — changes the cohort the whole page reports on */}

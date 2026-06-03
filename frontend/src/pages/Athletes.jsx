@@ -13,9 +13,11 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Plus, Search, CheckCircle2, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { ATHLETE_TAGS } from "@/data/seed";
+import { ScopeNote } from "@/components/shared/ScopeNote";
 
 export default function Athletes() {
-  const { athletes, addAthlete } = useApp();
+  const { scopedAthletes: athletes, addAthlete, can, scopeLabel, federationScope } = useApp();
+  const canAdd = can("athletes.add");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
@@ -83,9 +85,11 @@ export default function Athletes() {
     } else if (step === 3) {
       setStep(4);
     } else {
-      const a = addAthlete({ ...draft, onboarding: "active" });
+      // New athletes enter the pipeline at "invited" — they must self-register,
+      // upload docs and be verified by Ops before reaching "active".
+      const a = addAthlete({ ...draft, onboarding: "invited" });
       setCreatedId(a.id);
-      toast.success(`${a.name} added and activated`);
+      toast.success(`${a.name} invited · onboarding started`);
       setShowAdd(false);
       setStep(1);
       setDraft({ name: "", age: "", event: "100m sprint", squad: "Sprint B", coach: "Meera Iyer", onboarding: "invited" });
@@ -96,8 +100,8 @@ export default function Athletes() {
     <div data-testid="athletes-page">
       <PageHeader
         title="Athlete registry"
-        subtitle="Full federation roster · click any row to open the athlete profile"
-        action={
+        subtitle={federationScope ? "Full federation roster · click any row to open the athlete profile" : "Athletes within your scope · click any row to open the profile"}
+        action={canAdd && (
           <Dialog open={showAdd} onOpenChange={(o) => { setShowAdd(o); if (!o) setStep(1); }}>
             <DialogTrigger asChild>
               <Button data-testid="add-athlete-btn" className="bg-[#1E40AF] hover:bg-[#1E3A8A]">
@@ -165,26 +169,28 @@ export default function Athletes() {
                 )}
                 {step === 4 && (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-                    <p className="font-medium text-slate-900">Approve onboarding</p>
+                    <p className="font-medium text-slate-900">Send invite</p>
                     <ul className="mt-2 space-y-1 text-xs text-slate-600">
                       <li>· {draft.name || "Unnamed"} ({draft.event})</li>
                       <li>· Squad {draft.squad}</li>
                       <li>· Coach {draft.coach}</li>
-                      <li>· Status will move: invited → pending → verified → active</li>
+                      <li>· Enters pipeline at <strong>invited</strong> → self-register → docs → Ops verify → active</li>
                     </ul>
                   </div>
                 )}
                 <div className="flex justify-end gap-2 pt-2">
                   {step > 1 && <Button variant="outline" size="sm" onClick={() => setStep(step - 1)}>Back</Button>}
                   <Button data-testid="onb-next" size="sm" className="bg-[#1E40AF] hover:bg-[#1E3A8A]" onClick={submit}>
-                    {step === 4 ? "Approve & activate" : "Continue"}
+                    {step === 4 ? "Send invite" : "Continue"}
                   </Button>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
-        }
+        )}
       />
+
+      <ScopeNote scopeLabel={scopeLabel} readOnly={!canAdd} note={canAdd ? undefined : "registry is read-only for your role"} />
 
       <Card>
         <CardHeader

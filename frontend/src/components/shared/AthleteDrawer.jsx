@@ -14,7 +14,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export function AthleteDrawer({ athleteId, open, onOpenChange }) {
-  const { getAthlete, getInjuriesForAthlete, addAthleteTag, removeAthleteTag, advanceOnboarding } = useApp();
+  const { getAthlete, getInjuriesForAthlete, addAthleteTag, removeAthleteTag, advanceOnboarding, can } = useApp();
+  const canTag = can("athletes.tag");
+  const canVerify = can("athletes.verify");
   const athlete = athleteId ? getAthlete(athleteId) : null;
   if (!athlete) return null;
 
@@ -94,7 +96,7 @@ export function AthleteDrawer({ athleteId, open, onOpenChange }) {
               <div className="mt-4 rounded-lg border border-slate-200 p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Tags</p>
-                  {availableTags.length > 0 && (
+                  {canTag && availableTags.length > 0 && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -133,21 +135,23 @@ export function AthleteDrawer({ athleteId, open, onOpenChange }) {
                       className="flex items-center gap-1 rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-medium text-[#1E40AF]"
                     >
                       {t}
-                      <button
-                        data-testid={`remove-tag-${t}`}
-                        onClick={() => removeAthleteTag(athlete.id, t)}
-                        className="rounded-full transition-colors hover:bg-[#1E40AF]/10"
-                        title="Remove tag"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      {canTag && (
+                        <button
+                          data-testid={`remove-tag-${t}`}
+                          onClick={() => removeAthleteTag(athlete.id, t)}
+                          className="rounded-full transition-colors hover:bg-[#1E40AF]/10"
+                          title="Remove tag"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
                     </span>
                   ))}
                 </div>
               </div>
 
               {/* Onboarding pipeline */}
-              {nextOnb && (
+              {canVerify && nextOnb && (
                 <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Onboarding</p>
