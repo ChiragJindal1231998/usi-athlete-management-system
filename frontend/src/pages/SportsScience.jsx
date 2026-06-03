@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardHeader, CardBody } from "@/components/shared/Card";
 import { AIInsight } from "@/components/shared/AIInsight";
 import { StatCard } from "@/components/shared/StatCard";
+import { Watch, Check, Plus } from "lucide-react";
+import { toast } from "sonner";
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, ComposedChart, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea,
 } from "recharts";
@@ -162,7 +165,68 @@ export default function SportsScience() {
           </CardBody>
         </Card>
       </div>
+
+      <div className="mt-4">
+        <WearableIntegrations />
+      </div>
     </div>
+  );
+}
+
+const DEVICES = [
+  { id: "catapult", name: "Catapult GPS vest", type: "External load · GPS", connected: true, detail: "Live · last sync 4 min ago" },
+  { id: "whoop", name: "WHOOP 4.0 strap", type: "HRV · sleep · recovery", connected: true, detail: "Live · last sync 12 min ago" },
+  { id: "polar", name: "Polar H10 chest strap", type: "Heart rate", connected: false, detail: "Not connected" },
+  { id: "oura", name: "Oura ring (gen 3)", type: "Sleep · readiness", connected: false, detail: "Not connected" },
+];
+
+// Stub: wearable-connection panel. Toggling is local UI only — no real device API.
+function WearableIntegrations() {
+  const [devices, setDevices] = useState(DEVICES);
+  const toggle = (id) =>
+    setDevices((prev) =>
+      prev.map((d) => {
+        if (d.id !== id) return d;
+        const connected = !d.connected;
+        toast[connected ? "success" : "message"](`${d.name} ${connected ? "connected" : "disconnected"}`);
+        return { ...d, connected, detail: connected ? "Live · syncing now" : "Not connected" };
+      })
+    );
+  const liveCount = devices.filter((d) => d.connected).length;
+
+  return (
+    <Card data-testid="wearables-card">
+      <CardHeader
+        title="Wearable integrations"
+        subtitle="Connected device feeds powering the readiness and load signals"
+        action={<span className="flex items-center gap-1.5 text-xs text-slate-500"><Watch className="h-3.5 w-3.5" /> {liveCount} live</span>}
+      />
+      <CardBody>
+        <div className="grid grid-cols-2 gap-3">
+          {devices.map((d) => (
+            <div key={d.id} data-testid={`wearable-${d.id}`} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${d.connected ? "bg-[#DBEAFE] text-[#1D4ED8]" : "bg-slate-100 text-slate-400"}`}>
+                  <Watch className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-900">{d.name}</p>
+                  <p className="text-[11px] text-slate-500">{d.type}</p>
+                  <p className={`text-[11px] ${d.connected ? "text-[#1D4ED8]" : "text-slate-400"}`}>{d.detail}</p>
+                </div>
+              </div>
+              <button
+                data-testid={`wearable-toggle-${d.id}`}
+                onClick={() => toggle(d.id)}
+                className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${d.connected ? "border-slate-200 text-slate-600 hover:bg-slate-50" : "border-[#1E40AF] bg-[#1E40AF] text-white hover:bg-[#1E3A8A]"}`}
+              >
+                {d.connected ? <><Check className="h-3.5 w-3.5" /> Connected</> : <><Plus className="h-3.5 w-3.5" /> Connect</>}
+              </button>
+            </div>
+          ))}
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 

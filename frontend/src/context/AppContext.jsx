@@ -7,6 +7,7 @@ import {
   PERIODISATION,
   ATTENDANCE_SEED,
   ONBOARDING_STAGES,
+  FITNESS_TESTS,
 } from "@/data/seed";
 
 const AppContext = createContext(null);
@@ -47,11 +48,12 @@ export function AppProvider({ children }) {
   const [microPlan, setMicroPlan] = useState(persisted?.microPlan ?? PERIODISATION.micro);
   const [aiLoadAccepted, setAiLoadAccepted] = useState(persisted?.aiLoadAccepted ?? false);
   const [attendance, setAttendance] = useState(persisted?.attendance ?? ATTENDANCE_SEED);
+  const [fitnessTests, setFitnessTests] = useState(persisted?.fitnessTests ?? FITNESS_TESTS);
 
   // persist on any state change (debounced via microtask)
   useEffect(() => {
-    savePersisted({ role, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance });
-  }, [role, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance]);
+    savePersisted({ role, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests });
+  }, [role, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests]);
 
   const resetDemo = useCallback(() => {
     setAthletes(ATHLETES_SEED);
@@ -60,6 +62,7 @@ export function AppProvider({ children }) {
     setMicroPlan(PERIODISATION.micro);
     setAiLoadAccepted(false);
     setAttendance(ATTENDANCE_SEED);
+    setFitnessTests(FITNESS_TESTS);
     setRole("director");
     try {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -294,6 +297,27 @@ export function AppProvider({ children }) {
     setAlerts((p) => p.map((a) => (a.id === id ? { ...a, status: "dismissed" } : a)));
   }, []);
 
+  // Record a new fitness-test result. Benchmark auto-derives from 30 m time
+  // if not supplied (Elite ≤ 3.75 s, National ≤ 3.95 s, else Developing).
+  const addFitnessTest = useCallback((draft) => {
+    const sprint30 = Number(draft.sprint30) || 0;
+    const benchmark =
+      draft.benchmark || (sprint30 && sprint30 <= 3.75 ? "Elite" : sprint30 && sprint30 <= 3.95 ? "National" : "Developing");
+    const ath = athletes.find((a) => a.id === draft.athleteId);
+    const row = {
+      athleteId: draft.athleteId,
+      athleteName: ath?.name || draft.athleteId,
+      sprint30,
+      sprint60: Number(draft.sprint60) || 0,
+      cmj: Number(draft.cmj) || 0,
+      broadJump: Number(draft.broadJump) || 0,
+      benchmark,
+      recordedOn: new Date().toISOString().slice(0, 10),
+    };
+    setFitnessTests((p) => [row, ...p]);
+    return row;
+  }, [athletes]);
+
   const stats = useMemo(() => {
     const total = athletes.length;
     const available = athletes.filter((a) => a.status === "available").length;
@@ -313,6 +337,7 @@ export function AppProvider({ children }) {
     microPlan,
     aiLoadAccepted,
     attendance,
+    fitnessTests,
     stats,
     getAthlete,
     getInjuryByRegion,
@@ -328,6 +353,7 @@ export function AppProvider({ children }) {
     setAttendanceStatus,
     acceptAILoadReduction,
     dismissAlert,
+    addFitnessTest,
     moveSession,
     resetDemo,
   };

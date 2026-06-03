@@ -20,9 +20,11 @@ export default function Medical() {
   const [selectedRegion, setSelectedRegion] = useState("right-thigh");
   const [noteText, setNoteText] = useState("");
 
+  // getInjuryByRegion is a useCallback keyed on `injuries`, so depending on it
+  // re-derives whenever the injury list changes — no need to also list `injuries`.
   const injury = useMemo(
     () => getInjuryByRegion(selectedAthleteId, selectedRegion),
-    [selectedAthleteId, selectedRegion, injuries]
+    [selectedAthleteId, selectedRegion, getInjuryByRegion]
   );
   const athlete = athletes.find((a) => a.id === selectedAthleteId);
 
