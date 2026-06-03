@@ -1,5 +1,5 @@
 import { useApp } from "@/context/AppContext";
-import { ROLES, STAFF } from "@/data/seed";
+import { ROLES, STAFF, ATHLETE_LOGINS } from "@/data/seed";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -12,9 +12,15 @@ import { ChevronDown, Bell, Search, User2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 export function TopBar() {
-  const { role, setRole, alerts, resetDemo } = useApp();
+  const { role, setRole, athleteId, loginAsAthlete, athletes, alerts, resetDemo } = useApp();
   const currentRoleLabel = ROLES.find((r) => r.id === role)?.label;
   const activeAlerts = alerts.filter((a) => a.status === "active").length;
+  // For the athlete role, the signed-in profile is the selected athlete, not a fixed staff member.
+  const signedInAthlete = athletes.find((a) => a.id === athleteId);
+  const signedIn =
+    role === "athlete"
+      ? { name: signedInAthlete?.name || "Athlete", role: `${signedInAthlete?.event || ""} · ${athleteId}` }
+      : STAFF[role];
 
   return (
     <header
@@ -84,7 +90,7 @@ export function TopBar() {
               Viewing as
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {ROLES.map((r) => (
+            {ROLES.filter((r) => r.id !== "athlete").map((r) => (
               <DropdownMenuItem
                 key={r.id}
                 data-testid={`role-${r.id}`}
@@ -99,12 +105,33 @@ export function TopBar() {
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+              Login as athlete
+            </DropdownMenuLabel>
+            {ATHLETE_LOGINS.map((a) => {
+              const active = role === "athlete" && athleteId === a.id;
+              return (
+                <DropdownMenuItem
+                  key={a.id}
+                  data-testid={`login-athlete-${a.id}`}
+                  onSelect={() => loginAsAthlete(a.id)}
+                  className="cursor-pointer text-sm"
+                >
+                  <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${active ? "bg-[#1E40AF]" : "bg-slate-300"}`} />
+                  <span className="flex flex-col">
+                    <span>{a.name}</span>
+                    <span className="text-[10px] text-slate-400">{a.note}</span>
+                  </span>
+                </DropdownMenuItem>
+              );
+            })}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
               Signed in
             </DropdownMenuLabel>
             <div className="px-2 py-1.5 text-xs text-slate-600">
-              {STAFF[role]?.name || "—"}
-              {STAFF[role]?.role && (
-                <span className="block text-[10px] text-slate-400">{STAFF[role].role}</span>
+              {signedIn?.name || "—"}
+              {signedIn?.role && (
+                <span className="block text-[10px] text-slate-400">{signedIn.role}</span>
               )}
             </div>
           </DropdownMenuContent>

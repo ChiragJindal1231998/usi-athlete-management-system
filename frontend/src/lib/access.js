@@ -83,16 +83,19 @@ export function can(role, capability) {
 }
 
 // The athlete id a role is "signed in as" (only the athlete role has one).
-export function selfAthleteId(role) {
+// The athlete role can be signed in as any athlete via `athleteId`; it falls
+// back to the protagonist (Arjun) when none is supplied.
+export function selfAthleteId(role, athleteId) {
+  if (role === "athlete") return athleteId || ROLE_IDENTITY.athlete.athleteId;
   return ROLE_IDENTITY[role]?.athleteId || null;
 }
 
 // Scope a full athlete list down to what `role` may see.
-//   athlete → just their own record
+//   athlete → just their own record (the one they're signed in as)
 //   coach   → only athletes they coach
 //   everyone else → the full roster
-export function scopeAthletes(role, athletes) {
-  const id = ROLE_IDENTITY[role]?.athleteId;
+export function scopeAthletes(role, athletes, athleteId) {
+  const id = selfAthleteId(role, athleteId);
   if (id) return athletes.filter((a) => a.id === id);
   const staffName = ROLE_IDENTITY[role]?.staffName;
   if (staffName) return athletes.filter((a) => a.coach === staffName);

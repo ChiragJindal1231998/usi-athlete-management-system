@@ -1,33 +1,52 @@
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { AIInsight } from "@/components/shared/AIInsight";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { StatusBadge, statusVariant } from "@/components/shared/StatusBadge";
 import { REHAB_STAGES, WELLNESS_CHECKINS, NUTRITION_PLAN } from "@/data/seed";
 import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from "recharts";
 import { Activity, HeartPulse, Apple, CheckCircle2, Circle, Dumbbell, Moon } from "lucide-react";
 
-// Athlete self-view (Arjun) — ONE responsive layout: cards stack on small screens
-// and flow into a two-column grid from the `md` breakpoint up. Shows only his own data.
+// Athlete self-view — ONE responsive layout: cards stack on small screens and
+// flow into a two-column grid from the `md` breakpoint up. Driven entirely by the
+// athlete the user is signed in as (`me`); content adapts to rehab vs available.
 const cardCls = "rounded-xl border border-slate-200 bg-white p-4 shadow-sm";
 
 export default function AthleteSelfView() {
-  const { athletes, injuries, microPlan } = useApp();
-  const me = athletes.find((a) => a.id === "SPR-014") || athletes[0];
-  const injury = injuries.find((i) => i.athleteId === me.id && i.stage !== "Cleared");
+  const { me, athletes, injuries, microPlan } = useApp();
+  const athlete = me || athletes.find((a) => a.id === "SPR-014") || athletes[0];
+  const injury = injuries.find((i) => i.athleteId === athlete.id && i.stage !== "Cleared");
   const stageIdx = injury ? REHAB_STAGES.indexOf(injury.stage) : -1;
   const milestones = injury?.history || [];
 
-  const today = microPlan.find((d) => d.type === "Recovery") || microPlan[0];
+  // Rehabbing athletes get a recovery day surfaced; everyone else gets training.
+  const today = injury
+    ? microPlan.find((d) => d.type === "Recovery") || microPlan[0]
+    : microPlan.find((d) => d.type !== "Recovery") || microPlan[0];
   const checkin = WELLNESS_CHECKINS[WELLNESS_CHECKINS.length - 1];
-  const readinessData = [{ name: "readiness", value: me.readiness, fill: me.readiness >= 70 ? "#1E40AF" : me.readiness >= 55 ? "#D97706" : "#DC2626" }];
+  const readinessData = [{ name: "readiness", value: athlete.readiness, fill: athlete.readiness >= 70 ? "#1E40AF" : athlete.readiness >= 55 ? "#D97706" : "#DC2626" }];
+
+  // Status-aware headline for the readiness card.
+  const readinessHead = injury
+    ? { title: "Recovery focus", copy: "Readiness is below your baseline. Follow the rehab plan — no max-velocity work today." }
+    : athlete.readiness >= 75
+      ? { title: "Good to train", copy: "You're in a strong window. Attack today's session with full intent." }
+      : { title: "Monitor your load", copy: "Readiness is a touch low — prioritise recovery quality between efforts today." };
 
   // Local UI state only — tapping a task toggles it (no domain persistence needed for the self-view).
-  const [tasks, setTasks] = useState([
-    { label: "Morning wellness check-in", done: true },
-    { label: "Eccentric hamstring set (Nordics ×3)", done: true },
-    { label: "Pool recovery session · 4pm", done: false },
-    { label: "Log dinner — hit protein target", done: false },
-  ]);
+  const initialTasks = injury
+    ? [
+        { label: "Morning wellness check-in", done: true },
+        { label: "Prescribed rehab strength set (×3)", done: true },
+        { label: "Pool recovery session · 4pm", done: false },
+        { label: "Log dinner — hit protein target", done: false },
+      ]
+    : [
+        { label: "Morning wellness check-in", done: true },
+        { label: today?.session || "Today's training session", done: false },
+        { label: "Mobility & prehab routine", done: false },
+        { label: "Log dinner — hit protein target", done: false },
+      ];
+  const [tasks, setTasks] = useState(initialTasks);
   const toggleTask = (i) => setTasks((prev) => prev.map((t, idx) => (idx === i ? { ...t, done: !t.done } : t)));
   const doneCount = tasks.filter((t) => t.done).length;
 
@@ -37,11 +56,11 @@ export default function AthleteSelfView() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-slate-500">Good morning</p>
-          <p className="text-xl font-semibold text-slate-900">{me.name}</p>
-          <p className="text-xs text-slate-500">{me.event} · {me.squad} · {me.id}</p>
+          <p className="text-xl font-semibold text-slate-900">{athlete.name}</p>
+          <p className="text-xs text-slate-500">{athlete.event} · {athlete.squad} · {athlete.id}</p>
         </div>
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1E40AF] text-sm font-semibold text-white">
-          {me.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+          {athlete.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
         </div>
       </div>
 
@@ -60,27 +79,36 @@ export default function AthleteSelfView() {
                   </RadialBarChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-slate-900">{me.readiness}</span>
+                  <span className="text-2xl font-bold text-slate-900">{athlete.readiness}</span>
                   <span className="text-[10px] uppercase tracking-wider text-slate-400">readiness</span>
                 </div>
               </div>
               <div className="min-w-0 flex-1 text-center sm:text-left">
-                <p className="text-sm font-medium text-slate-900">Recovery day</p>
-                <p className="mt-1 text-xs text-slate-500">Readiness is below your baseline. Stick to the rehab plan — no max-velocity work today.</p>
+                <p className="text-sm font-medium text-slate-900">{readinessHead.title}</p>
+                <p className="mt-1 text-xs text-slate-500">{readinessHead.copy}</p>
                 <div className="mt-2 flex justify-center gap-2 sm:justify-start">
-                  <StatusBadge variant="rehab">{me.status}</StatusBadge>
-                  <StatusBadge variant="mild">ACWR {me.acwr.toFixed(2)}</StatusBadge>
+                  <StatusBadge variant={statusVariant(athlete.status)}>{athlete.status}</StatusBadge>
+                  <StatusBadge variant={athlete.acwr > 1.3 ? "severe" : "mild"}>ACWR {athlete.acwr.toFixed(2)}</StatusBadge>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* AI insight */}
-          <AIInsight title="Your rehab · today" confidence={78} testId="ai-athlete">
-            <p className="text-sm">
-              You&rsquo;re on <strong>day 14</strong>, stage 3 of 5. Eccentric strength is <strong>78%</strong> of your healthy side —
-              target 90% before return-to-play. Estimated clearance: <strong>8–12 days</strong>. Keep nailing the Nordics.
-            </p>
+          {/* AI insight — rehab guidance when injured, performance guidance when available */}
+          <AIInsight title={injury ? "Your rehab · today" : "Your training · today"} confidence={78} testId="ai-athlete">
+            {injury ? (
+              <p className="text-sm">
+                You&rsquo;re on <strong>day {injury.daysOut}</strong>, <strong>{injury.stage}</strong> stage ({stageIdx + 1} of 5)
+                for your {injury.diagnosis.toLowerCase()}. Stick to the prescribed plan and hit your strength benchmarks before
+                progressing — your physio reviews you again this week.
+              </p>
+            ) : (
+              <p className="text-sm">
+                You&rsquo;re fully available with a readiness of <strong>{athlete.readiness}</strong> and an ACWR of <strong>{athlete.acwr.toFixed(2)}</strong>
+                {athlete.acwr > 1.3 ? " — slightly above the optimal band, so manage volume carefully today." : " — right in the optimal load band, good to push."}{" "}
+                Keep your wellness check-ins and fuelling consistent.
+              </p>
+            )}
           </AIInsight>
 
           {/* Rehab progress */}
@@ -181,7 +209,7 @@ export default function AthleteSelfView() {
                 <p className="text-slate-500">protein</p>
               </div>
               <div className="rounded-lg border border-slate-200 py-2">
-                <p className="text-sm font-semibold text-slate-900">{me.nutritionAdherence ?? 78}%</p>
+                <p className="text-sm font-semibold text-slate-900">{athlete.nutritionAdherence ?? 78}%</p>
                 <p className="text-slate-500">adherence</p>
               </div>
             </div>

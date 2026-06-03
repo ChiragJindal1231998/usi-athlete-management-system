@@ -38,13 +38,14 @@ const HEADER = {
 };
 
 export default function Dashboard() {
-  const { role } = useApp();
+  const { role, athleteId, athletes } = useApp();
   const [openId, setOpenId] = useState(null);
 
   const View = VIEWS[role] || DirectorDashboard;
   const head = HEADER[role] || HEADER.director;
   const roleLabel = ROLES.find((r) => r.id === role)?.label || "Performance director";
-  const staff = STAFF[role];
+  // For the athlete role the signed-in profile is the selected athlete.
+  const staff = role === "athlete" ? athletes.find((a) => a.id === athleteId) : STAFF[role];
 
   return (
     <div data-testid="dashboard-page">
@@ -64,7 +65,7 @@ export default function Dashboard() {
         }
       />
 
-      <View onOpenAthlete={setOpenId} />
+      <View key={`${role}-${athleteId}`} onOpenAthlete={setOpenId} />
 
       <AthleteDrawer athleteId={openId} open={!!openId} onOpenChange={(o) => !o && setOpenId(null)} />
     </div>

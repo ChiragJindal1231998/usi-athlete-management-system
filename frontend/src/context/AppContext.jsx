@@ -51,6 +51,8 @@ export function AppProvider({ children }) {
   const persisted = loadPersisted();
 
   const [role, setRole] = useState(persisted?.role ?? "director");
+  // Which athlete the athlete-role view is signed in as (Arjun by default).
+  const [athleteId, setAthleteId] = useState(persisted?.athleteId ?? "SPR-014");
   const [athletes, setAthletes] = useState(persisted?.athletes ?? ATHLETES_SEED);
   const [injuries, setInjuries] = useState(persisted?.injuries ?? INJURIES_SEED);
   const [alerts, setAlerts] = useState(persisted?.alerts ?? ALERTS_SEED);
@@ -61,8 +63,8 @@ export function AppProvider({ children }) {
 
   // persist on any state change (debounced via microtask)
   useEffect(() => {
-    savePersisted({ role, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests });
-  }, [role, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests]);
+    savePersisted({ role, athleteId, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests });
+  }, [role, athleteId, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests]);
 
   const resetDemo = useCallback(() => {
     setAthletes(ATHLETES_SEED);
@@ -73,6 +75,7 @@ export function AppProvider({ children }) {
     setAttendance(ATTENDANCE_SEED);
     setFitnessTests(FITNESS_TESTS);
     setRole("director");
+    setAthleteId("SPR-014");
     try {
       window.localStorage.removeItem(STORAGE_KEY);
     } catch (err) {
@@ -393,12 +396,18 @@ export function AppProvider({ children }) {
   // when viewing as an athlete. See `@/lib/access`.
   const can = useCallback((capability) => canDo(role, capability), [role]);
 
-  const scopedAthletes = useMemo(() => scopeAthletes(role, athletes), [role, athletes]);
+  const scopedAthletes = useMemo(() => scopeAthletes(role, athletes, athleteId), [role, athletes, athleteId]);
 
   const me = useMemo(() => {
-    const id = selfAthleteId(role);
+    const id = selfAthleteId(role, athleteId);
     return id ? athletes.find((a) => a.id === id) || null : null;
-  }, [role, athletes]);
+  }, [role, athleteId, athletes]);
+
+  // Sign in as a specific athlete and switch into the athlete self-view.
+  const loginAsAthlete = useCallback((id) => {
+    setAthleteId(id);
+    setRole("athlete");
+  }, []);
 
   const scopeLabel = SCOPE_LABEL[role] || "All athletes";
   const federationScope = isFederationScope(role);
@@ -406,6 +415,8 @@ export function AppProvider({ children }) {
   const value = {
     role,
     setRole,
+    athleteId,
+    loginAsAthlete,
     athletes,
     injuries,
     alerts,
