@@ -8,15 +8,17 @@ import { DataTable } from "@/components/shared/DataTable";
 import { BodyMap, regionLabel } from "@/components/medical/BodyMap";
 import { REHAB_STAGES, WELLNESS_CHECKINS } from "@/data/seed";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Check, ArrowRight, Activity, Calendar } from "lucide-react";
+import { Check, ArrowRight, Activity, Calendar, Plus } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 
 export default function Medical() {
-  const { athletes, injuries, getInjuryByRegion, advanceInjuryStage, reportInjury } = useApp();
+  const { athletes, injuries, getInjuryByRegion, advanceInjuryStage, reportInjury, addInjuryNote } = useApp();
   const [selectedAthleteId, setSelectedAthleteId] = useState("SPR-014");
   const [selectedRegion, setSelectedRegion] = useState("right-thigh");
+  const [noteText, setNoteText] = useState("");
 
   const injury = useMemo(
     () => getInjuryByRegion(selectedAthleteId, selectedRegion),
@@ -171,6 +173,60 @@ export default function Medical() {
                     >
                       {injury.stage === "Cleared" ? "Cleared" : "Advance stage"}
                       {injury.stage !== "Cleared" && <ArrowRight className="ml-1 h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Clinical timeline */}
+                <div data-testid="injury-timeline">
+                  <p className="mb-2 text-sm font-semibold text-slate-900">Clinical timeline</p>
+                  <div className="space-y-0">
+                    {(injury.history || []).length === 0 && (
+                      <p className="text-xs text-slate-500">No timeline entries yet.</p>
+                    )}
+                    {(injury.history || []).map((h, idx, arr) => (
+                      <div key={idx} className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${idx === arr.length - 1 ? "bg-[#1E40AF]" : "bg-slate-300"}`} />
+                          {idx < arr.length - 1 && <div className="my-0.5 w-0.5 flex-1 bg-slate-200" />}
+                        </div>
+                        <div className="pb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{h.stage}</span>
+                            <span className="text-[11px] text-slate-400">{h.date} · {h.author}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-700">{h.note}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Input
+                      data-testid="injury-note-input"
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && noteText.trim()) {
+                          addInjuryNote(injury.id, noteText);
+                          setNoteText("");
+                          toast.success("Clinical note added");
+                        }
+                      }}
+                      placeholder="Add a clinical note…"
+                      className="h-9 text-sm"
+                    />
+                    <Button
+                      data-testid="add-injury-note"
+                      size="sm"
+                      className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+                      disabled={!noteText.trim()}
+                      onClick={() => {
+                        addInjuryNote(injury.id, noteText);
+                        setNoteText("");
+                        toast.success("Clinical note added");
+                      }}
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" /> Add note
                     </Button>
                   </div>
                 </div>

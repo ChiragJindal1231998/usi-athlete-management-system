@@ -10,13 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Plus, Search, CheckCircle2 } from "lucide-react";
+import { Plus, Search, CheckCircle2, Tag } from "lucide-react";
 import { toast } from "sonner";
+import { ATHLETE_TAGS } from "@/data/seed";
 
 export default function Athletes() {
-  const { athletes, addAthlete, updateAthleteOnboarding } = useApp();
+  const { athletes, addAthlete } = useApp();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("all");
   const [openId, setOpenId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [step, setStep] = useState(1);
@@ -25,11 +27,12 @@ export default function Athletes() {
 
   const filtered = useMemo(() => {
     return athletes.filter((a) => {
-      const matchQ = (a.name + a.id + a.event).toLowerCase().includes(query.toLowerCase());
+      const matchQ = (a.name + a.id + a.event + (a.tags || []).join(" ")).toLowerCase().includes(query.toLowerCase());
       const matchF = filter === "all" || a.status === filter;
-      return matchQ && matchF;
+      const matchT = tagFilter === "all" || (a.tags || []).includes(tagFilter);
+      return matchQ && matchF && matchT;
     });
-  }, [athletes, query, filter]);
+  }, [athletes, query, filter, tagFilter]);
 
   const columns = [
     { key: "name", header: "Athlete", render: (r) => (
@@ -54,6 +57,20 @@ export default function Athletes() {
     ) },
     { key: "onboarding", header: "Onboarding", render: (r) => (
       <span className="text-xs text-slate-600">{r.onboarding}</span>
+    ) },
+    { key: "tags", header: "Tags", render: (r) => (
+      (r.tags || []).length === 0 ? (
+        <span className="text-xs text-slate-300">—</span>
+      ) : (
+        <div className="flex flex-wrap gap-1">
+          {(r.tags || []).slice(0, 2).map((t) => (
+            <span key={t} className="rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[10px] font-medium text-[#1E40AF]">{t}</span>
+          ))}
+          {(r.tags || []).length > 2 && (
+            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">+{r.tags.length - 2}</span>
+          )}
+        </div>
+      )
     ) },
   ];
 
@@ -185,12 +202,24 @@ export default function Athletes() {
                 />
               </div>
               <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">All status</SelectItem>
                   <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="injured">Injured</SelectItem>
                   <SelectItem value="rehab">In rehab</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={tagFilter} onValueChange={setTagFilter}>
+                <SelectTrigger data-testid="athletes-tag-filter" className="h-8 w-36 text-xs">
+                  <Tag className="mr-1 h-3 w-3 text-slate-400" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All tags</SelectItem>
+                  {ATHLETE_TAGS.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

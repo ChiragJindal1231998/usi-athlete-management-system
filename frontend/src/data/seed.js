@@ -6,14 +6,22 @@ export const ROLES = [
   { id: "director", label: "Performance director" },
   { id: "coach", label: "Coach" },
   { id: "physio", label: "Physiotherapist" },
+  { id: "scientist", label: "Sports scientist" },
+  { id: "nutritionist", label: "Nutritionist" },
+  { id: "ops", label: "Operations team" },
+  { id: "athlete", label: "Athlete" },
 ];
 
+// Signed-in staff/profile per role (used in the TopBar account menu).
 export const STAFF = {
+  admin: { name: "Kavya Nair", role: "Federation admin" },
+  director: { name: "Vikram Desai", role: "Performance director" },
   coach: { name: "Meera Iyer", role: "Head sprint coach" },
   physio: { name: "Dr Rao", role: "Lead physiotherapist" },
-  director: { name: "Vikram Desai", role: "Performance director" },
   scientist: { name: "Dr Anika Bose", role: "Sports scientist" },
   nutritionist: { name: "Priya Menon", role: "Sports nutritionist" },
+  ops: { name: "Sunil Pillai", role: "Operations lead" },
+  athlete: { name: "Arjun Sharma", role: "100m sprinter · SPR-014" },
 };
 
 // Athletes (12 total). Arjun is the protagonist.
@@ -34,6 +42,9 @@ export const ATHLETES_SEED = [
     weeklyLoad: [340, 410, 470, 520, 610, 690, 720, 540],
     docsVerified: true,
     onboarding: "active",
+    tags: ["Elite prospect", "National camp", "Injury watch"],
+    talentScore: 92,
+    nutritionAdherence: 78,
     height: 178,
     weight: 72,
     pb: { "100m": "10.31s", "200m": "20.94s" },
@@ -45,18 +56,39 @@ export const ATHLETES_SEED = [
     ],
     hrv: [62, 60, 58, 55, 51, 48, 46, 52, 56],
     sleep: [7.6, 7.4, 7.0, 6.8, 6.4, 6.2, 6.6, 7.2, 7.5],
+    // GPS (per training session, last 7) — distance in m, speeds in km/h
+    gps: [
+      { day: "D1", total: 4200, hsr: 720, sprint: 240, maxSpeed: 33.1, accel: 18 },
+      { day: "D2", total: 3900, hsr: 640, sprint: 210, maxSpeed: 32.6, accel: 16 },
+      { day: "D3", total: 4600, hsr: 880, sprint: 320, maxSpeed: 34.0, accel: 22 },
+      { day: "D4", total: 2100, hsr: 180, sprint: 40, maxSpeed: 27.4, accel: 6 },
+      { day: "D5", total: 4800, hsr: 940, sprint: 360, maxSpeed: 34.4, accel: 25 },
+      { day: "D6", total: 5100, hsr: 1080, sprint: 420, maxSpeed: 34.8, accel: 28 },
+      { day: "D7", total: 1600, hsr: 90, sprint: 0, maxSpeed: 21.0, accel: 3 },
+    ],
   },
-  { id: "SPR-002", name: "Rohan Verma", age: 24, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 84, acwr: 1.08, docsVerified: true, onboarding: "active" },
-  { id: "SPR-005", name: "Karan Singh", age: 21, sport: "Athletics", event: "400m", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 79, acwr: 1.18, docsVerified: true, onboarding: "active" },
-  { id: "JMP-009", name: "Aditya Patel", age: 23, sport: "Athletics", event: "Long jump", squad: "Jumps", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 72, acwr: 1.31, docsVerified: true, onboarding: "active" },
-  { id: "ATH-021", name: "Vikas Nair", age: 25, sport: "Athletics", event: "Decathlon", squad: "Combined", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 81, acwr: 1.04, docsVerified: true, onboarding: "active" },
-  { id: "SPR-018", name: "Manish Reddy", age: 20, sport: "Athletics", event: "100m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "rehab", readiness: 64, acwr: 0.91, docsVerified: true, onboarding: "active" },
-  { id: "HUR-007", name: "Devika Rao", age: 23, sport: "Athletics", event: "100m hurdles", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 88, acwr: 1.12, docsVerified: true, onboarding: "active" },
-  { id: "SPR-022", name: "Neha Joshi", age: 22, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 75, acwr: 1.22, docsVerified: true, onboarding: "active" },
-  { id: "JMP-012", name: "Pooja Shah", age: 21, sport: "Athletics", event: "Triple jump", squad: "Jumps", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 77, acwr: 1.14, docsVerified: true, onboarding: "active" },
-  { id: "THR-003", name: "Sandeep Yadav", age: 26, sport: "Athletics", event: "Shot put", squad: "Throws", coach: "Anil Khanna", physio: "Dr Rao", status: "injured", readiness: 52, acwr: 1.41, docsVerified: true, onboarding: "active" },
-  { id: "SPR-031", name: "Anjali Mehta", age: 19, sport: "Athletics", event: "100m sprint", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 82, acwr: 1.07, docsVerified: false, onboarding: "pending" },
-  { id: "ATH-040", name: "Ritu Kapoor", age: 18, sport: "Athletics", event: "800m", squad: "Mid distance", coach: "Rajesh Bhat", physio: "Dr Rao", status: "available", readiness: 70, acwr: 1.19, docsVerified: false, onboarding: "invited" },
+  { id: "SPR-002", name: "Rohan Verma", age: 24, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 84, acwr: 1.08, docsVerified: true, onboarding: "active", tags: ["National camp"], talentScore: 82, nutritionAdherence: 90 },
+  { id: "SPR-005", name: "Karan Singh", age: 21, sport: "Athletics", event: "400m", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 79, acwr: 1.18, docsVerified: true, onboarding: "active", tags: [], talentScore: 78, nutritionAdherence: 84 },
+  { id: "JMP-009", name: "Aditya Patel", age: 23, sport: "Athletics", event: "Long jump", squad: "Jumps", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 72, acwr: 1.31, docsVerified: true, onboarding: "active", tags: ["Elite prospect", "Load watch"], talentScore: 88, nutritionAdherence: 72 },
+  { id: "ATH-021", name: "Vikas Nair", age: 25, sport: "Athletics", event: "Decathlon", squad: "Combined", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 81, acwr: 1.04, docsVerified: true, onboarding: "active", tags: [], talentScore: 74, nutritionAdherence: 88 },
+  { id: "SPR-018", name: "Manish Reddy", age: 20, sport: "Athletics", event: "100m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "rehab", readiness: 64, acwr: 0.91, docsVerified: true, onboarding: "active", tags: ["Injury watch"], talentScore: 80, nutritionAdherence: 80 },
+  { id: "HUR-007", name: "Devika Rao", age: 23, sport: "Athletics", event: "100m hurdles", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 88, acwr: 1.12, docsVerified: true, onboarding: "active", tags: ["Elite prospect"], talentScore: 85, nutritionAdherence: 93 },
+  { id: "SPR-022", name: "Neha Joshi", age: 22, sport: "Athletics", event: "200m sprint", squad: "Sprint A", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 75, acwr: 1.22, docsVerified: true, onboarding: "active", tags: [], talentScore: 76, nutritionAdherence: 86 },
+  { id: "JMP-012", name: "Pooja Shah", age: 21, sport: "Athletics", event: "Triple jump", squad: "Jumps", coach: "Suresh Kumar", physio: "Dr Rao", status: "available", readiness: 77, acwr: 1.14, docsVerified: true, onboarding: "active", tags: [], talentScore: 73, nutritionAdherence: 82 },
+  { id: "THR-003", name: "Sandeep Yadav", age: 26, sport: "Athletics", event: "Shot put", squad: "Throws", coach: "Anil Khanna", physio: "Dr Rao", status: "injured", readiness: 52, acwr: 1.41, docsVerified: true, onboarding: "active", tags: ["Injury watch", "Load watch"], talentScore: 70, nutritionAdherence: 64 },
+  { id: "SPR-031", name: "Anjali Mehta", age: 19, sport: "Athletics", event: "100m sprint", squad: "Sprint B", coach: "Meera Iyer", physio: "Dr Rao", status: "available", readiness: 82, acwr: 1.07, docsVerified: false, onboarding: "pending", tags: ["Development squad"], talentScore: 75, nutritionAdherence: 79 },
+  { id: "ATH-040", name: "Ritu Kapoor", age: 18, sport: "Athletics", event: "800m", squad: "Mid distance", coach: "Rajesh Bhat", physio: "Dr Rao", status: "available", readiness: 70, acwr: 1.19, docsVerified: false, onboarding: "invited", tags: ["Development squad"], talentScore: 68, nutritionAdherence: 75 },
+];
+
+// Catalogue of tags that can be applied to athletes (athlete registry tagging).
+export const ATHLETE_TAGS = [
+  "Elite prospect",
+  "National camp",
+  "Development squad",
+  "Injury watch",
+  "Load watch",
+  "Scholarship",
+  "Overseas exposure",
 ];
 
 // Body regions mapped to current injuries. Keyed by athleteId + region.
@@ -75,6 +107,11 @@ export const INJURIES_SEED = [
     stage: "Rehab", // Reported | Under treatment | Rehab | Return-to-play | Cleared
     notes: "AI flagged elevated risk 4 days before injury (ACWR 1.52, 78% confidence). Now on phase 3 rehab.",
     aiPredicted: true,
+    history: [
+      { date: "2025-02-02", stage: "Reported", author: "Dr Rao", note: "Acute onset during 6th acceleration rep. Felt posterior thigh grab. Sat MRI confirms grade 2 strain at proximal myotendinous junction." },
+      { date: "2025-02-04", stage: "Under treatment", author: "Dr Rao", note: "Started PEACE & LOVE protocol. Pain 6/10, restricted ROM. Isometric loading introduced day 2." },
+      { date: "2025-02-09", stage: "Rehab", author: "Dr Rao", note: "Progressed to phase 3 — eccentric Nordics + underwater treadmill. Eccentric strength 78% of left-leg baseline." },
+    ],
   },
   {
     id: "INJ-1002",
@@ -89,6 +126,12 @@ export const INJURIES_SEED = [
     stage: "Return-to-play",
     notes: "Progressing to high-speed running this week.",
     aiPredicted: false,
+    history: [
+      { date: "2025-01-22", stage: "Reported", author: "Dr Rao", note: "Reported anterior knee pain after cumulative jump volume. Tender at inferior patellar pole." },
+      { date: "2025-01-28", stage: "Under treatment", author: "Dr Rao", note: "Load management + isometric holds. Pain settling, 3/10 on decline squat." },
+      { date: "2025-02-06", stage: "Rehab", author: "Dr Rao", note: "Heavy slow resistance protocol started. Tolerating well." },
+      { date: "2025-02-13", stage: "Return-to-play", author: "Dr Rao", note: "Cleared for high-speed running progression this week." },
+    ],
   },
   {
     id: "INJ-1003",
@@ -103,6 +146,10 @@ export const INJURIES_SEED = [
     stage: "Under treatment",
     notes: "Pain on resisted external rotation, mild swelling.",
     aiPredicted: true,
+    history: [
+      { date: "2025-02-05", stage: "Reported", author: "Dr Rao", note: "Reported posterior shoulder pain after a 38% spike in throwing volume. AI load monitor had flagged the spike 2 days prior." },
+      { date: "2025-02-08", stage: "Under treatment", author: "Dr Rao", note: "Pain on resisted external rotation, mild swelling. Scapular control work + manual therapy. Throwing paused." },
+    ],
   },
 ];
 
@@ -245,6 +292,26 @@ export const COPILOT_ANSWERS = {
   "compare arjun's 30m to squad average":
     "Arjun's last recorded 30m: **3.71s** (Elite benchmark). Sprint squad average: **3.82s**. He is 0.11s ahead of squad mean, ranked #1 on the testing register. Note: test was pre-injury (24 Jan).",
 };
+
+// Training attendance — today's session roster for the sprint squad.
+// status: present | late | absent | excused (rehab/medical)
+export const ATTENDANCE_SEED = {
+  session: "Acceleration 30m × 6 · Sprint A",
+  date: "2025-02-16",
+  roster: [
+    { athleteId: "SPR-014", status: "excused", note: "Rehab — recovery only" },
+    { athleteId: "SPR-002", status: "present" },
+    { athleteId: "SPR-005", status: "present" },
+    { athleteId: "SPR-018", status: "excused", note: "RTP progression" },
+    { athleteId: "HUR-007", status: "present" },
+    { athleteId: "SPR-022", status: "late", note: "Arrived 15 min late" },
+    { athleteId: "SPR-031", status: "present" },
+    { athleteId: "ATH-040", status: "absent", note: "Unexcused" },
+  ],
+};
+
+// Onboarding pipeline stages (athlete registration lifecycle).
+export const ONBOARDING_STAGES = ["invited", "pending", "review", "active"];
 
 // Documents (for athlete drawer)
 export const DOCUMENTS_SEED = {

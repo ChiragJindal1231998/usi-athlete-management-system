@@ -19,9 +19,17 @@ const SESSION_TYPE_STYLE = {
   Mobility: "bg-[#FEF3C7] text-[#92400E] border-[#FCD34D]/50",
 };
 
+const ATTENDANCE_OPTIONS = [
+  { value: "present", label: "Present", style: "bg-[#D1FAE5] text-[#065F46] border-[#34D399]/50" },
+  { value: "late", label: "Late", style: "bg-[#FEF3C7] text-[#92400E] border-[#FCD34D]/50" },
+  { value: "absent", label: "Absent", style: "bg-[#FECACA] text-[#991B1B] border-[#F87171]/50" },
+  { value: "excused", label: "Excused", style: "bg-slate-100 text-slate-600 border-slate-200" },
+];
+
 export default function Training() {
-  const { microPlan, aiLoadAccepted, acceptAILoadReduction, athletes, moveSession } = useApp();
+  const { microPlan, aiLoadAccepted, acceptAILoadReduction, athletes, moveSession, attendance, setAttendanceStatus } = useApp();
   const arjun = athletes.find((a) => a.id === "SPR-014");
+  const attCounts = attendance.roster.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {});
   const [selectedSession, setSelectedSession] = useState(null);
   const [builderItems, setBuilderItems] = useState([]);
   const [rpe, setRpe] = useState(7);
@@ -128,6 +136,64 @@ export default function Training() {
                       <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/60">
                         <div className="h-full bg-current opacity-70" style={{ width: `${d.load}%` }} />
                       </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      <div className="mt-4">
+        <Card>
+          <CardHeader
+            title="Session attendance"
+            subtitle={`${attendance.session} · ${attendance.date}`}
+            action={
+              <div className="flex items-center gap-2 text-xs">
+                <span className="flex items-center gap-1 text-[#065F46]"><span className="h-2 w-2 rounded-full bg-[#34D399]" /> {attCounts.present || 0} present</span>
+                <span className="flex items-center gap-1 text-[#92400E]"><span className="h-2 w-2 rounded-full bg-[#FCD34D]" /> {attCounts.late || 0} late</span>
+                <span className="flex items-center gap-1 text-[#991B1B]"><span className="h-2 w-2 rounded-full bg-[#F87171]" /> {attCounts.absent || 0} absent</span>
+                <span className="flex items-center gap-1 text-slate-500"><span className="h-2 w-2 rounded-full bg-slate-300" /> {attCounts.excused || 0} excused</span>
+              </div>
+            }
+          />
+          <CardBody className="p-0">
+            <div className="divide-y divide-slate-100" data-testid="attendance-roster">
+              {attendance.roster.map((r) => {
+                const ath = athletes.find((a) => a.id === r.athleteId);
+                if (!ath) return null;
+                return (
+                  <div key={r.athleteId} data-testid={`attendance-row-${r.athleteId}`} className="flex items-center justify-between px-5 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-[10px] font-semibold text-slate-700">
+                        {ath.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{ath.name}</p>
+                        <p className="text-[11px] text-slate-500">
+                          {ath.id} · {ath.event}{r.note ? ` · ${r.note}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {ATTENDANCE_OPTIONS.map((opt) => {
+                        const active = r.status === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            data-testid={`attendance-${r.athleteId}-${opt.value}`}
+                            onClick={() => {
+                              setAttendanceStatus(r.athleteId, opt.value);
+                              toast.success(`${ath.name} marked ${opt.label.toLowerCase()}`);
+                            }}
+                            className={`rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${active ? opt.style : "border-slate-200 bg-white text-slate-400 hover:bg-slate-50"}`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 );

@@ -10,15 +10,15 @@ High-fidelity, production-feel prototype of an enterprise SaaS — the Athlete M
 - Font: **DM Sans** (more distinctive than Inter while still enterprise-clean)
 - No backend, no database, no env keys required.
 
-## User personas
-- Federation admin · Performance director · Coach · Physiotherapist (role switcher in TopBar)
+## User personas (8, role switcher in TopBar)
+- Federation admin · Performance director · Coach · Physiotherapist · Sports scientist · Nutritionist · Operations team · Athlete (self-view). Each role drives the Dashboard greeting, the filtered "quick view" roster, and the signed-in profile in the account menu (`STAFF[role]`).
 
 ## Core requirements implemented
 1. **Dashboard / Command center** — 4 stat cards, readiness trend chart (squad vs Arjun), AI-prioritised injury alerts, AI recommendations block, ACWR bar chart, athletes quick view. Role switcher changes subtitle and filtered roster.
-2. **Athletes** — registry DataTable for 12 athletes, search + status filter, click-row drawer with Overview / Training / Medical / Documents tabs, 4-step onboarding dialog (details → docs → coach → approve) that adds a real new athlete row.
-3. **Training & periodisation** — macro→meso→micro timeline, current microcycle with load bars, AI load-reduction Insight with **Accept** button that swaps Friday/Saturday to recovery (real state change). ACWR 8-week chart with sweet-spot band. Exercise-library session builder.
-4. **Medical & injury (priority)** — fully interactive SVG body map (20 regions), Arjun's right thigh pre-coloured rehab-blue. Detail panel with AI prediction record, **5-stage RTP tracker** (Reported → Under treatment → Rehab → Return-to-play → Cleared) advanced via real state mutation; reaching Cleared turns region green and sets athlete to available. Healthy regions show mild/moderate/severe Report buttons that immediately colour the region. Squad injury log table + wellness check-ins chart.
-5. **Sports science** — HRV/sleep/load/ACWR stats + AI risk-detection explainer + 4 charts + recovery actions list.
+2. **Athletes** — registry DataTable for 12 athletes, search + status filter + **tag filter**, **tags column**. Click-row drawer with Overview / Training / Medical / Documents tabs; Overview tab now manages **athlete tags** (add via dropdown from `ATHLETE_TAGS`, remove via chip ✕) and shows an **onboarding-pipeline advance** button (invited → pending → review → active; reaching active sets `docsVerified`). 4-step onboarding dialog that adds a real new athlete row.
+3. **Training & periodisation** — macro→meso→micro timeline, current microcycle with load bars, AI load-reduction Insight with **Accept** button that swaps Friday/Saturday to recovery (real state change). ACWR 8-week chart with sweet-spot band. Exercise-library session builder. **Session attendance roster** — per-athlete present/late/absent/excused toggles with live count summary (real state via `setAttendanceStatus`).
+4. **Medical & injury (priority)** — fully interactive SVG body map (20 regions), Arjun's right thigh pre-coloured rehab-blue. Detail panel with AI prediction record, **5-stage RTP tracker** (Reported → Under treatment → Rehab → Return-to-play → Cleared) advanced via real state mutation; reaching Cleared turns region green and sets athlete to available. Healthy regions show mild/moderate/severe Report buttons that immediately colour the region. **Clinical timeline** per injury (history entries) with an **add-note** input that appends real entries; stage advances and new reports also append to the timeline. Squad injury log table + wellness check-ins chart.
+5. **Sports science** — HRV/sleep/load/ACWR stats + AI risk-detection explainer + charts + recovery actions list + **GPS external-load card** (ComposedChart: total/HSR/sprint distance bars + max-speed line over last 7 sessions) with a rolling-totals summary panel.
 6. **Nutrition** — 4 stat cards, adherence area chart, macro split, hydration chart, supplements compliance, body-composition trend.
 7. **Assessments & TID** — fitness test register, talent score ranking, progression chart, 30m comparative chart.
 8. **Analytics & BI** — drill-down breadcrumb, AI predictive insight, readiness & injury-rate charts, participation by program, **Export report** button with toast.

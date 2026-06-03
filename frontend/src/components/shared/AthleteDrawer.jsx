@@ -1,12 +1,20 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { StatusBadge, statusVariant, readinessVariant } from "@/components/shared/StatusBadge";
 import { useApp } from "@/context/AppContext";
-import { DOCUMENTS_SEED } from "@/data/seed";
+import { DOCUMENTS_SEED, ATHLETE_TAGS, ONBOARDING_STAGES } from "@/data/seed";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CheckCircle2, FileText, AlertTriangle } from "lucide-react";
+import { CheckCircle2, FileText, AlertTriangle, X, Plus, ArrowRight } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export function AthleteDrawer({ athleteId, open, onOpenChange }) {
-  const { getAthlete, getInjuriesForAthlete } = useApp();
+  const { getAthlete, getInjuriesForAthlete, addAthleteTag, removeAthleteTag, advanceOnboarding } = useApp();
   const athlete = athleteId ? getAthlete(athleteId) : null;
   if (!athlete) return null;
 
@@ -21,6 +29,11 @@ export function AthleteDrawer({ athleteId, open, onOpenChange }) {
     .map((n) => n[0])
     .slice(0, 2)
     .join("");
+
+  const athleteTags = athlete.tags || [];
+  const availableTags = ATHLETE_TAGS.filter((t) => !athleteTags.includes(t));
+  const onbIdx = ONBOARDING_STAGES.indexOf(athlete.onboarding);
+  const nextOnb = onbIdx >= 0 && onbIdx < ONBOARDING_STAGES.length - 1 ? ONBOARDING_STAGES[onbIdx + 1] : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -76,6 +89,85 @@ export function AthleteDrawer({ athleteId, open, onOpenChange }) {
                 {athlete.pb && <Info label="PB 100m" value={athlete.pb["100m"]} />}
                 {athlete.pb && <Info label="PB 200m" value={athlete.pb["200m"]} />}
               </div>
+
+              {/* Tags */}
+              <div className="mt-4 rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Tags</p>
+                  {availableTags.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          data-testid="add-tag-btn"
+                          className="flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                        >
+                          <Plus className="h-3 w-3" /> Add tag
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        {availableTags.map((t) => (
+                          <DropdownMenuItem
+                            key={t}
+                            data-testid={`tag-option-${t}`}
+                            onSelect={() => {
+                              addAthleteTag(athlete.id, t);
+                              toast.success(`Tagged "${t}"`);
+                            }}
+                            className="cursor-pointer text-xs"
+                          >
+                            {t}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {athleteTags.length === 0 && (
+                    <span className="text-xs text-slate-400">No tags yet.</span>
+                  )}
+                  {athleteTags.map((t) => (
+                    <span
+                      key={t}
+                      data-testid={`tag-chip-${t}`}
+                      className="flex items-center gap-1 rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-medium text-[#1E40AF]"
+                    >
+                      {t}
+                      <button
+                        data-testid={`remove-tag-${t}`}
+                        onClick={() => removeAthleteTag(athlete.id, t)}
+                        className="rounded-full transition-colors hover:bg-[#1E40AF]/10"
+                        title="Remove tag"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Onboarding pipeline */}
+              {nextOnb && (
+                <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Onboarding</p>
+                    <p className="mt-0.5 text-sm font-medium text-slate-900">
+                      {athlete.onboarding} <ArrowRight className="inline h-3 w-3 text-slate-400" /> {nextOnb}
+                    </p>
+                  </div>
+                  <Button
+                    data-testid="advance-onboarding"
+                    size="sm"
+                    className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+                    onClick={() => {
+                      advanceOnboarding(athlete.id);
+                      toast.success(`${athlete.name} advanced to ${nextOnb}`);
+                    }}
+                  >
+                    Advance to {nextOnb}
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="training">

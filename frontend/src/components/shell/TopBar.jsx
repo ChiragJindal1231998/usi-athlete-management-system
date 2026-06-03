@@ -102,7 +102,10 @@ export function TopBar() {
               Signed in
             </DropdownMenuLabel>
             <div className="px-2 py-1.5 text-xs text-slate-600">
-              {STAFF[role === "admin" ? "director" : role === "director" ? "director" : role === "coach" ? "coach" : "physio"]?.name || "—"}
+              {STAFF[role]?.name || "—"}
+              {STAFF[role]?.role && (
+                <span className="block text-[10px] text-slate-400">{STAFF[role].role}</span>
+              )}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>

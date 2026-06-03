@@ -4,7 +4,7 @@ import { Card, CardHeader, CardBody } from "@/components/shared/Card";
 import { AIInsight } from "@/components/shared/AIInsight";
 import { StatCard } from "@/components/shared/StatCard";
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea,
+  LineChart, Line, AreaChart, Area, BarChart, Bar, ComposedChart, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea,
 } from "recharts";
 
 export default function SportsScience() {
@@ -14,6 +14,10 @@ export default function SportsScience() {
   const loadData = arjun.weeklyLoad.map((w, idx) => ({ week: `W${idx + 1}`, load: w }));
   const hrvData = arjun.hrv.map((h, idx) => ({ day: `D${idx + 1}`, hrv: h }));
   const sleepData = arjun.sleep.map((s, idx) => ({ day: `D${idx + 1}`, sleep: s }));
+  const gps = arjun.gps || [];
+  const peakSpeed = gps.length ? Math.max(...gps.map((g) => g.maxSpeed)) : 0;
+  const totalDistance = gps.reduce((s, g) => s + g.total, 0);
+  const totalHsr = gps.reduce((s, g) => s + g.hsr, 0);
 
   return (
     <div data-testid="sports-science-page">
@@ -119,6 +123,55 @@ export default function SportsScience() {
           </CardBody>
         </Card>
       </div>
+
+      {/* GPS / external load tracking */}
+      <div className="mt-4 grid grid-cols-12 gap-4">
+        <Card className="col-span-8" data-testid="gps-card">
+          <CardHeader
+            title="GPS · external load (last 7 sessions)"
+            subtitle="Total distance, high-speed running (>19.8 km/h) and sprint distance (>25 km/h)"
+          />
+          <CardBody>
+            <ResponsiveContainer width="100%" height={240}>
+              <ComposedChart data={gps} margin={{ top: 8, right: 12, left: -10, bottom: 0 }}>
+                <CartesianGrid stroke="#F1F5F9" vertical={false} />
+                <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="dist" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="speed" orientation="right" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} domain={[15, 38]} unit=" km/h" />
+                <Tooltip contentStyle={{ border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar yAxisId="dist" dataKey="total" name="Total (m)" radius={[4, 4, 0, 0]} fill="#BFDBFE" />
+                <Bar yAxisId="dist" dataKey="hsr" name="HSR (m)" radius={[4, 4, 0, 0]} fill="#1E40AF" />
+                <Bar yAxisId="dist" dataKey="sprint" name="Sprint (m)" radius={[4, 4, 0, 0]} fill="#DC2626" />
+                <Line yAxisId="speed" type="monotone" dataKey="maxSpeed" name="Max speed (km/h)" stroke="#059669" strokeWidth={2.5} dot={{ r: 3, fill: "#059669" }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <p className="mt-2 text-[11px] text-slate-500">
+              Note the D4 &amp; D7 drops — recovery sessions during rehab. Sprint exposure deliberately suppressed while hamstring loads back up.
+            </p>
+          </CardBody>
+        </Card>
+
+        <Card className="col-span-4">
+          <CardHeader title="GPS summary" subtitle="Rolling 7-session totals" />
+          <CardBody className="space-y-3">
+            <GpsStat label="Peak speed" value={`${peakSpeed.toFixed(1)} km/h`} sub="92% of pre-injury best (37.8)" />
+            <GpsStat label="Total distance" value={`${(totalDistance / 1000).toFixed(1)} km`} sub="across 7 sessions" />
+            <GpsStat label="High-speed running" value={`${(totalHsr / 1000).toFixed(2)} km`} sub="building toward 6 km/wk target" />
+            <GpsStat label="Sprint distance" value={`${gps.reduce((s, g) => s + g.sprint, 0)} m`} sub="capped during rehab" />
+          </CardBody>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function GpsStat({ label, value, sub }) {
+  return (
+    <div className="rounded-lg border border-slate-200 px-3 py-2.5">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="mt-0.5 text-lg font-semibold text-slate-900">{value}</p>
+      <p className="text-[11px] text-slate-500">{sub}</p>
     </div>
   );
 }

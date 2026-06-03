@@ -5,6 +5,8 @@ import {
   ALERTS_SEED,
   REHAB_STAGES,
   PERIODISATION,
+  ATTENDANCE_SEED,
+  ONBOARDING_STAGES,
 } from "@/data/seed";
 
 const AppContext = createContext(null);
@@ -44,11 +46,12 @@ export function AppProvider({ children }) {
   const [alerts, setAlerts] = useState(persisted?.alerts ?? ALERTS_SEED);
   const [microPlan, setMicroPlan] = useState(persisted?.microPlan ?? PERIODISATION.micro);
   const [aiLoadAccepted, setAiLoadAccepted] = useState(persisted?.aiLoadAccepted ?? false);
+  const [attendance, setAttendance] = useState(persisted?.attendance ?? ATTENDANCE_SEED);
 
   // persist on any state change (debounced via microtask)
   useEffect(() => {
-    savePersisted({ role, athletes, injuries, alerts, microPlan, aiLoadAccepted });
-  }, [role, athletes, injuries, alerts, microPlan, aiLoadAccepted]);
+    savePersisted({ role, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance });
+  }, [role, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance]);
 
   const resetDemo = useCallback(() => {
     setAthletes(ATHLETES_SEED);
@@ -56,6 +59,7 @@ export function AppProvider({ children }) {
     setAlerts(ALERTS_SEED);
     setMicroPlan(PERIODISATION.micro);
     setAiLoadAccepted(false);
+    setAttendance(ATTENDANCE_SEED);
     setRole("director");
     try {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -87,11 +91,21 @@ export function AppProvider({ children }) {
         const idx = REHAB_STAGES.indexOf(i.stage);
         const nextIdx = Math.min(idx + 1, REHAB_STAGES.length - 1);
         const nextStage = REHAB_STAGES[nextIdx];
+        if (nextStage === i.stage) return i; // already at final stage
         const cleared = nextStage === "Cleared";
+        const entry = {
+          date: new Date().toISOString().slice(0, 10),
+          stage: nextStage,
+          author: "Dr Rao",
+          note: cleared
+            ? "Cleared for full return to training. Discharged from rehab."
+            : `Advanced to ${nextStage} stage.`,
+        };
         return {
           ...i,
           stage: nextStage,
           severity: cleared ? "cleared" : "rehab",
+          history: [...(i.history || []), entry],
         };
       })
     );
@@ -133,6 +147,14 @@ export function AppProvider({ children }) {
       stage: "Reported",
       notes: "Just reported via body map.",
       aiPredicted: false,
+      history: [
+        {
+          date: new Date().toISOString().slice(0, 10),
+          stage: "Reported",
+          author: "Dr Rao",
+          note: `${sevLabelMap[severity] || "Injury"} reported via body map.`,
+        },
+      ],
     };
     setInjuries((p) => [newInjury, ...p]);
     setAthletes((p) =>
@@ -157,6 +179,7 @@ export function AppProvider({ children }) {
       acwr: 1.0,
       docsVerified: false,
       onboarding: draft.onboarding || "invited",
+      tags: draft.tags || [],
     };
     setAthletes((p) => [newAthlete, ...p]);
     return newAthlete;
@@ -170,6 +193,72 @@ export function AppProvider({ children }) {
           : a
       )
     );
+  }, []);
+
+  // Advance an athlete through the onboarding pipeline:
+  // invited → pending → review → active. Reaching "active" marks docs verified.
+  const advanceOnboarding = useCallback((id) => {
+    setAthletes((p) =>
+      p.map((a) => {
+        if (a.id !== id) return a;
+        const idx = ONBOARDING_STAGES.indexOf(a.onboarding);
+        const nextIdx = Math.min(idx + 1, ONBOARDING_STAGES.length - 1);
+        const next = ONBOARDING_STAGES[nextIdx];
+        return { ...a, onboarding: next, docsVerified: next === "active" ? true : a.docsVerified };
+      })
+    );
+  }, []);
+
+  const addAthleteTag = useCallback((id, tag) => {
+    if (!tag) return;
+    setAthletes((p) =>
+      p.map((a) =>
+        a.id === id && !(a.tags || []).includes(tag)
+          ? { ...a, tags: [...(a.tags || []), tag] }
+          : a
+      )
+    );
+  }, []);
+
+  const removeAthleteTag = useCallback((id, tag) => {
+    setAthletes((p) =>
+      p.map((a) =>
+        a.id === id ? { ...a, tags: (a.tags || []).filter((t) => t !== tag) } : a
+      )
+    );
+  }, []);
+
+  // Append a clinical note to an injury's history timeline.
+  const addInjuryNote = useCallback((injuryId, note, author = "Dr Rao") => {
+    if (!note?.trim()) return;
+    setInjuries((p) =>
+      p.map((i) =>
+        i.id === injuryId
+          ? {
+              ...i,
+              history: [
+                ...(i.history || []),
+                {
+                  date: new Date().toISOString().slice(0, 10),
+                  stage: i.stage,
+                  author,
+                  note: note.trim(),
+                },
+              ],
+            }
+          : i
+      )
+    );
+  }, []);
+
+  // Set an athlete's attendance status for today's session.
+  const setAttendanceStatus = useCallback((athleteId, status, note) => {
+    setAttendance((prev) => ({
+      ...prev,
+      roster: prev.roster.map((r) =>
+        r.athleteId === athleteId ? { ...r, status, ...(note !== undefined ? { note } : {}) } : r
+      ),
+    }));
   }, []);
 
   const acceptAILoadReduction = useCallback(() => {
@@ -223,6 +312,7 @@ export function AppProvider({ children }) {
     alerts,
     microPlan,
     aiLoadAccepted,
+    attendance,
     stats,
     getAthlete,
     getInjuryByRegion,
@@ -231,6 +321,11 @@ export function AppProvider({ children }) {
     reportInjury,
     addAthlete,
     updateAthleteOnboarding,
+    advanceOnboarding,
+    addAthleteTag,
+    removeAthleteTag,
+    addInjuryNote,
+    setAttendanceStatus,
     acceptAILoadReduction,
     dismissAlert,
     moveSession,
