@@ -4,30 +4,54 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardHeader, CardBody } from "@/components/shared/Card";
 import { AIInsight } from "@/components/shared/AIInsight";
 import { StatCard } from "@/components/shared/StatCard";
+import { readinessVariant } from "@/components/shared/StatusBadge";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Watch, Check, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, ComposedChart, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea,
 } from "recharts";
 import { ScopeNote } from "@/components/shared/ScopeNote";
+import { hrvSeries, sleepSeries, loadSeries } from "@/lib/readiness";
 
 export default function SportsScience() {
-  const { athletes, me, scopeLabel } = useApp();
-  const arjun = (me && me.hrv ? me : null) || athletes.find((a) => a.id === "SPR-014") || athletes[0];
+  const { scopedAthletes: athletes, me, scopeLabel } = useApp();
+  const defaultId = (me?.id && athletes.some((a) => a.id === me.id)) ? me.id
+    : (athletes.find((a) => a.id === "SPR-014")?.id || athletes[0]?.id);
+  const [selectedId, setSelectedId] = useState(defaultId);
+  const athlete = athletes.find((a) => a.id === selectedId) || athletes[0];
 
-  const loadData = arjun.weeklyLoad.map((w, idx) => ({ week: `W${idx + 1}`, load: w }));
-  const hrvData = arjun.hrv.map((h, idx) => ({ day: `D${idx + 1}`, hrv: h }));
-  const sleepData = arjun.sleep.map((s, idx) => ({ day: `D${idx + 1}`, sleep: s }));
-  const gps = arjun.gps || [];
-  const peakSpeed = gps.length ? Math.max(...gps.map((g) => g.maxSpeed)) : 0;
+  const loadData = loadSeries(athlete);
+  const hrvData = hrvSeries(athlete);
+  const sleepData = sleepSeries(athlete);
+  const lastHrv = hrvData.length ? hrvData[hrvData.length - 1].hrv : 0;
+  const lastSleep = sleepData.length ? sleepData[sleepData.length - 1].sleep : 0;
+  const lastLoad = loadData.length ? loadData[loadData.length - 1].load : 0;
+  const gps = athlete?.gps || [];
+  const hasGps = gps.length > 0;
+  const peakSpeed = hasGps ? Math.max(...gps.map((g) => g.maxSpeed)) : 0;
   const totalDistance = gps.reduce((s, g) => s + g.total, 0);
   const totalHsr = gps.reduce((s, g) => s + g.hsr, 0);
+  const isArjun = athlete?.id === "SPR-014";
+  const firstName = athlete?.name?.split(" ")[0] || "athlete";
 
   return (
     <div data-testid="sports-science-page">
       <PageHeader
         title="Sports science"
         subtitle="Readiness, fatigue and recovery analytics — the data feed behind the injury predictions"
+        action={
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="h-9 w-56" data-testid="ss-athlete-select">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {athletes.map((a) => (
+                <SelectItem key={a.id} value={a.id}>{a.name} — {a.id}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
       />
 
       <ScopeNote
@@ -37,23 +61,46 @@ export default function SportsScience() {
       />
 
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="HRV (ms)" value={arjun.hrv[arjun.hrv.length - 1]} trend={-12} trendLabel="vs baseline" />
-        <StatCard label="Sleep (h)" value={arjun.sleep[arjun.sleep.length - 1]} trend={-4} suffix="hrs" />
-        <StatCard label="Weekly load" value={arjun.weeklyLoad[arjun.weeklyLoad.length - 1]} trend={-25} suffix="AU" />
-        <StatCard label="ACWR" accent value={arjun.acwr.toFixed(2)} trend={-22} trendLabel="post-adjustment" />
+        <StatCard
+          label="Readiness"
+          accent
+          value={athlete?.readiness ?? "—"}
+          suffix="/ 100"
+          trend={athlete?.readiness >= 75 ? 4 : -6}
+          trendLabel={athlete?.readiness != null ? readinessVariant(athlete.readiness) : ""}
+        />
+        <StatCard label="HRV (ms)" value={lastHrv} trend={-12} trendLabel="vs baseline" />
+        <StatCard label="Sleep (h)" value={lastSleep} trend={-4} suffix="hrs" />
+        <StatCard label="ACWR" value={athlete?.acwr?.toFixed(2)} trend={-22} trendLabel={`load ${lastLoad} AU`} />
       </div>
 
       <div className="mt-4">
-        <AIInsight title="Risk detection · how Arjun's injury was predicted" confidence={78} testId="ss-ai-explain">
-          <p className="mb-2">
-            The system fused three signals into a 78% hamstring-injury probability four days before the strain:
-          </p>
-          <ol className="ml-4 list-decimal space-y-1 text-sm">
-            <li><strong>Workload</strong> — ACWR breached 1.5 (sweet spot 0.8–1.3) on week 7.</li>
-            <li><strong>Recovery</strong> — HRV trend dropped 18% over 5 days; sleep below 7 h for 3 nights.</li>
-            <li><strong>Wellness</strong> — Self-reported soreness rose from 4 to 7 between Wed–Sat.</li>
-          </ol>
-        </AIInsight>
+        {isArjun ? (
+          <AIInsight title={`Risk detection · how ${firstName}'s injury was predicted`} confidence={78} testId="ss-ai-explain">
+            <p className="mb-2">
+              The system fused three signals into a 78% hamstring-injury probability four days before the strain:
+            </p>
+            <ol className="ml-4 list-decimal space-y-1 text-sm">
+              <li><strong>Workload</strong> — ACWR breached 1.5 (sweet spot 0.8–1.3) on week 7.</li>
+              <li><strong>Recovery</strong> — HRV trend dropped 18% over 5 days; sleep below 7 h for 3 nights.</li>
+              <li><strong>Wellness</strong> — Self-reported soreness rose from 4 to 7 between Wed–Sat.</li>
+            </ol>
+          </AIInsight>
+        ) : (
+          <AIInsight title={`Risk detection · ${athlete?.name}`} confidence={athlete?.acwr > 1.3 || athlete?.readiness < 65 ? 71 : 38} testId="ss-ai-explain">
+            <p>
+              {athlete?.acwr > 1.3 || athlete?.readiness < 65 ? (
+                <>Composite risk is <strong>elevated</strong>. ACWR sits at <strong>{athlete?.acwr?.toFixed(2)}</strong>
+                {athlete?.acwr > 1.3 ? " (above the 1.3 ceiling)" : " (in band)"}, readiness at <strong>{athlete?.readiness}</strong>
+                {athlete?.readiness < 65 ? " (below the 65 watch line)" : ""} and last-recorded HRV at <strong>{lastHrv} ms</strong>.
+                Recommend a load review and an extra recovery block this week.</>
+              ) : (
+                <>No risk signals outstanding. ACWR <strong>{athlete?.acwr?.toFixed(2)}</strong> sits in the 0.8–1.3 band,
+                readiness is <strong>{athlete?.readiness}</strong> and HRV/sleep are stable — cleared for full training load.</>
+              )}
+            </p>
+          </AIInsight>
+        )}
       </div>
 
       <div className="mt-4 grid grid-cols-12 gap-4">
@@ -91,7 +138,10 @@ export default function SportsScience() {
                 <Line type="monotone" dataKey="hrv" stroke="#1E40AF" strokeWidth={2.5} dot={{ r: 3, fill: "#1E40AF" }} />
               </LineChart>
             </ResponsiveContainer>
-            <p className="mt-2 text-[11px] text-slate-500">Red band marks suppressed recovery. Arjun dipped on D6–D7.</p>
+            <p className="mt-2 text-[11px] text-slate-500">
+              Red band marks suppressed recovery.{" "}
+              {lastHrv < 50 ? `${firstName}'s HRV is sitting in the suppressed zone.` : `${firstName}'s HRV is holding above the suppression band.`}
+            </p>
           </CardBody>
         </Card>
       </div>
@@ -115,13 +165,27 @@ export default function SportsScience() {
         <Card className="col-span-6">
           <CardHeader title="Recovery actions taken" subtitle="Sports science team interventions" />
           <CardBody className="space-y-2">
-            {[
-              { name: "Cryotherapy session", date: "12 Feb", status: "Completed" },
-              { name: "Soft-tissue release · hamstring", date: "14 Feb", status: "Completed" },
-              { name: "Sleep extension protocol", date: "Ongoing", status: "Active" },
-              { name: "Magnesium + omega-3 protocol", date: "Ongoing", status: "Active" },
-              { name: "Pool recovery", date: "15 Feb", status: "Scheduled" },
-            ].map((r) => (
+            {(isArjun
+              ? [
+                  { name: "Cryotherapy session", date: "12 Feb", status: "Completed" },
+                  { name: "Soft-tissue release · hamstring", date: "14 Feb", status: "Completed" },
+                  { name: "Sleep extension protocol", date: "Ongoing", status: "Active" },
+                  { name: "Magnesium + omega-3 protocol", date: "Ongoing", status: "Active" },
+                  { name: "Pool recovery", date: "15 Feb", status: "Scheduled" },
+                ]
+              : athlete?.readiness < 65
+              ? [
+                  { name: "Sleep extension protocol", date: "Ongoing", status: "Active" },
+                  { name: "Soft-tissue release", date: "This week", status: "Scheduled" },
+                  { name: "Cold-water immersion", date: "Post-session", status: "Active" },
+                  { name: "Load review with coach", date: "This week", status: "Scheduled" },
+                ]
+              : [
+                  { name: "Standard mobility routine", date: "Ongoing", status: "Active" },
+                  { name: "Sleep hygiene baseline", date: "Ongoing", status: "Active" },
+                  { name: "Hydration + nutrition monitoring", date: "Ongoing", status: "Active" },
+                ]
+            ).map((r) => (
               <div key={r.name} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 text-sm">
                 <div>
                   <p className="font-medium text-slate-900">{r.name}</p>
@@ -142,33 +206,55 @@ export default function SportsScience() {
             subtitle="Total distance, high-speed running (>19.8 km/h) and sprint distance (>25 km/h)"
           />
           <CardBody>
-            <ResponsiveContainer width="100%" height={240}>
-              <ComposedChart data={gps} margin={{ top: 8, right: 12, left: -10, bottom: 0 }}>
-                <CartesianGrid stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="dist" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="speed" orientation="right" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} domain={[15, 38]} unit=" km/h" />
-                <Tooltip contentStyle={{ border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12 }} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar yAxisId="dist" dataKey="total" name="Total (m)" radius={[4, 4, 0, 0]} fill="#BFDBFE" />
-                <Bar yAxisId="dist" dataKey="hsr" name="HSR (m)" radius={[4, 4, 0, 0]} fill="#1E40AF" />
-                <Bar yAxisId="dist" dataKey="sprint" name="Sprint (m)" radius={[4, 4, 0, 0]} fill="#DC2626" />
-                <Line yAxisId="speed" type="monotone" dataKey="maxSpeed" name="Max speed (km/h)" stroke="#059669" strokeWidth={2.5} dot={{ r: 3, fill: "#059669" }} />
-              </ComposedChart>
-            </ResponsiveContainer>
-            <p className="mt-2 text-[11px] text-slate-500">
-              Note the D4 &amp; D7 drops — recovery sessions during rehab. Sprint exposure deliberately suppressed while hamstring loads back up.
-            </p>
+            {hasGps ? (
+              <>
+                <ResponsiveContainer width="100%" height={240}>
+                  <ComposedChart data={gps} margin={{ top: 8, right: 12, left: -10, bottom: 0 }}>
+                    <CartesianGrid stroke="#F1F5F9" vertical={false} />
+                    <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="dist" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="speed" orientation="right" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} domain={[15, 38]} unit=" km/h" />
+                    <Tooltip contentStyle={{ border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12 }} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Bar yAxisId="dist" dataKey="total" name="Total (m)" radius={[4, 4, 0, 0]} fill="#BFDBFE" />
+                    <Bar yAxisId="dist" dataKey="hsr" name="HSR (m)" radius={[4, 4, 0, 0]} fill="#1E40AF" />
+                    <Bar yAxisId="dist" dataKey="sprint" name="Sprint (m)" radius={[4, 4, 0, 0]} fill="#DC2626" />
+                    <Line yAxisId="speed" type="monotone" dataKey="maxSpeed" name="Max speed (km/h)" stroke="#059669" strokeWidth={2.5} dot={{ r: 3, fill: "#059669" }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+                {isArjun && (
+                  <p className="mt-2 text-[11px] text-slate-500">
+                    Note the D4 &amp; D7 drops — recovery sessions during rehab. Sprint exposure deliberately suppressed while hamstring loads back up.
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="flex h-[240px] flex-col items-center justify-center text-center" data-testid="gps-empty">
+                <Watch className="h-8 w-8 text-slate-300" />
+                <p className="mt-3 text-sm font-medium text-slate-600">No GPS feed for {firstName}</p>
+                <p className="mt-1 max-w-xs text-xs text-slate-400">
+                  No Catapult vest is assigned to this athlete. External-load metrics appear once a GPS device is connected.
+                </p>
+              </div>
+            )}
           </CardBody>
         </Card>
 
         <Card className="col-span-4">
           <CardHeader title="GPS summary" subtitle="Rolling 7-session totals" />
           <CardBody className="space-y-3">
-            <GpsStat label="Peak speed" value={`${peakSpeed.toFixed(1)} km/h`} sub="92% of pre-injury best (37.8)" />
-            <GpsStat label="Total distance" value={`${(totalDistance / 1000).toFixed(1)} km`} sub="across 7 sessions" />
-            <GpsStat label="High-speed running" value={`${(totalHsr / 1000).toFixed(2)} km`} sub="building toward 6 km/wk target" />
-            <GpsStat label="Sprint distance" value={`${gps.reduce((s, g) => s + g.sprint, 0)} m`} sub="capped during rehab" />
+            {hasGps ? (
+              <>
+                <GpsStat label="Peak speed" value={`${peakSpeed.toFixed(1)} km/h`} sub={isArjun ? "92% of pre-injury best (37.8)" : "fastest of last 7 sessions"} />
+                <GpsStat label="Total distance" value={`${(totalDistance / 1000).toFixed(1)} km`} sub="across 7 sessions" />
+                <GpsStat label="High-speed running" value={`${(totalHsr / 1000).toFixed(2)} km`} sub={isArjun ? "building toward 6 km/wk target" : ">19.8 km/h exposure"} />
+                <GpsStat label="Sprint distance" value={`${gps.reduce((s, g) => s + g.sprint, 0)} m`} sub={isArjun ? "capped during rehab" : ">25 km/h exposure"} />
+              </>
+            ) : (
+              <p className="py-8 text-center text-xs text-slate-400" data-testid="gps-summary-empty">
+                Connect a GPS vest to populate {firstName}'s external-load totals.
+              </p>
+            )}
           </CardBody>
         </Card>
       </div>

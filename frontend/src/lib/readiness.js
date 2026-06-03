@@ -75,7 +75,7 @@ export function wellnessTrend(athlete) {
   const baseSleep = 5 + (w.sleep / 100) * 3.5; // ~5.0–8.5 h
   const baseSore = 10 - (w.soreness / 100) * 8; // freshness → soreness (1–10)
   const baseMood = 1 + (w.mood / 100) * 9; // 1–10
-  const stress = athlete.readiness != null ? Math.max(0, (75 - athlete.readiness)) / 100 : 0;
+  const stress = loadStress(athlete);
   const h = hashId(athlete.id);
   return TREND_DAYS.map((date, i) => {
     const drift = i / 6; // 0 → 1 across the week
@@ -89,5 +89,60 @@ export function wellnessTrend(athlete) {
       soreness: Math.round(Math.max(1, Math.min(10, soreness))),
       mood: Math.round(Math.max(1, Math.min(10, mood))),
     };
+  });
+}
+
+// How hard an athlete is carrying load right now (0 → ~0.4), used to shape how
+// their derived signals drift over the observation window. Below-target
+// readiness ramps the drift; fully-fresh athletes stay flat.
+function loadStress(athlete) {
+  return athlete?.readiness != null ? Math.max(0, (75 - athlete.readiness)) / 100 : 0;
+}
+
+// 9-day HRV series (lnRMSSD, ms). Uses the athlete's real array when present
+// (Arjun), otherwise derives from their HRV/autonomic wellness sub-score.
+export function hrvSeries(athlete) {
+  if (athlete?.hrv?.length) return athlete.hrv.map((hrv, i) => ({ day: `D${i + 1}`, hrv }));
+  const w = athlete?.wellness;
+  if (!w) return [];
+  const base = 35 + (w.hrv / 100) * 35; // ~40–70 ms
+  const stress = loadStress(athlete);
+  const h = hashId(athlete.id);
+  return Array.from({ length: 9 }, (_, i) => {
+    const drift = i / 8;
+    const jitter = (((h >> i) & 3) - 1.5) * 1.2;
+    return { day: `D${i + 1}`, hrv: Math.round(Math.max(38, Math.min(72, base - stress * 12 * drift + jitter))) };
+  });
+}
+
+// 9-day sleep-duration series (hours). Real array when present, else derived
+// from the sleep-quality wellness sub-score.
+export function sleepSeries(athlete) {
+  if (athlete?.sleep?.length) return athlete.sleep.map((sleep, i) => ({ day: `D${i + 1}`, sleep }));
+  const w = athlete?.wellness;
+  if (!w) return [];
+  const base = 5 + (w.sleep / 100) * 3.5;
+  const stress = loadStress(athlete);
+  const h = hashId(athlete.id);
+  return Array.from({ length: 9 }, (_, i) => {
+    const drift = i / 8;
+    const jitter = (((h >> (i + 1)) & 3) - 1.5) * 0.15;
+    return { day: `D${i + 1}`, sleep: Math.round(Math.max(5, Math.min(9, base - stress * 1.4 * drift + jitter)) * 10) / 10 };
+  });
+}
+
+// 8-week training-load series (arbitrary units). Real array when present, else
+// reconstructed from ACWR: chronic baseline ramps to an acute load consistent
+// with the athlete's current acute:chronic ratio.
+export function loadSeries(athlete) {
+  if (athlete?.weeklyLoad?.length) return athlete.weeklyLoad.map((load, i) => ({ week: `W${i + 1}`, load }));
+  const chronic = 440;
+  const acute = (athlete?.acwr ?? 1) * chronic;
+  const start = chronic * 0.7;
+  const h = hashId(athlete?.id || "");
+  return Array.from({ length: 8 }, (_, i) => {
+    const t = i / 7;
+    const jitter = (((h >> i) & 3) - 1.5) * 18;
+    return { week: `W${i + 1}`, load: Math.round(start + (acute - start) * t + jitter) };
   });
 }
