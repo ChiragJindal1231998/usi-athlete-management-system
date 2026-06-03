@@ -6,7 +6,8 @@ import { AIInsight } from "@/components/shared/AIInsight";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { DataTable } from "@/components/shared/DataTable";
 import { BodyMap, regionLabel } from "@/components/medical/BodyMap";
-import { REHAB_STAGES, WELLNESS_CHECKINS } from "@/data/seed";
+import { REHAB_STAGES } from "@/data/seed";
+import { wellnessTrend } from "@/lib/readiness";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -280,10 +281,10 @@ export default function Medical() {
         </Card>
 
         <Card className="col-span-5">
-          <CardHeader title="Wellness check-ins · Arjun" subtitle="Daily self-reported sleep, soreness, mood" />
+          <CardHeader title={`Wellness check-ins · ${athlete?.name?.split(" ")[0] || "athlete"}`} subtitle="Daily self-reported sleep, soreness, mood" />
           <CardBody>
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={WELLNESS_CHECKINS} margin={{ top: 8, right: 12, left: -10, bottom: 0 }}>
+              <LineChart data={wellnessTrend(athlete)} margin={{ top: 8, right: 12, left: -10, bottom: 0 }}>
                 <CartesianGrid stroke="#F1F5F9" vertical={false} />
                 <XAxis dataKey="date" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
