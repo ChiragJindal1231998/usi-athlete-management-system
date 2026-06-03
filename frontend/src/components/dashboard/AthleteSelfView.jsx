@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { AIInsight } from "@/components/shared/AIInsight";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -11,17 +12,21 @@ export default function AthleteSelfView() {
   const me = athletes.find((a) => a.id === "SPR-014") || athletes[0];
   const injury = injuries.find((i) => i.athleteId === me.id && i.stage !== "Cleared");
   const stageIdx = injury ? REHAB_STAGES.indexOf(injury.stage) : -1;
+  const milestones = injury?.history || [];
 
   const today = microPlan.find((d) => d.type === "Recovery") || microPlan[0];
   const checkin = WELLNESS_CHECKINS[WELLNESS_CHECKINS.length - 1];
   const readinessData = [{ name: "readiness", value: me.readiness, fill: me.readiness >= 70 ? "#1E40AF" : me.readiness >= 55 ? "#D97706" : "#DC2626" }];
 
-  const tasks = [
+  // Local UI state only — tapping a task toggles it (no domain persistence needed for the self-view).
+  const [tasks, setTasks] = useState([
     { label: "Morning wellness check-in", done: true },
     { label: "Eccentric hamstring set (Nordics ×3)", done: true },
     { label: "Pool recovery session · 4pm", done: false },
     { label: "Log dinner — hit protein target", done: false },
-  ];
+  ]);
+  const toggleTask = (i) => setTasks((prev) => prev.map((t, idx) => (idx === i ? { ...t, done: !t.done } : t)));
+  const doneCount = tasks.filter((t) => t.done).length;
 
   return (
     <div data-testid="dashboard-athlete-view" className="flex justify-center">
@@ -99,6 +104,30 @@ export default function AthleteSelfView() {
                   <span className="font-semibold text-[#1E40AF]">{injury.stage}</span>
                   <span>Cleared</span>
                 </div>
+
+                {/* Milestone timeline */}
+                {milestones.length > 0 && (
+                  <div className="mt-4 border-t border-slate-100 pt-3">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Milestones</p>
+                    <ol className="space-y-3">
+                      {[...milestones].reverse().map((m, i) => (
+                        <li key={`${m.date}-${i}`} className="flex gap-2.5">
+                          <div className="flex flex-col items-center">
+                            <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${i === 0 ? "bg-[#1E40AF]" : "bg-slate-300"}`} />
+                            {i < milestones.length - 1 && <span className="mt-0.5 w-px flex-1 bg-slate-200" />}
+                          </div>
+                          <div className="min-w-0 pb-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-slate-800">{m.stage}</span>
+                              <span className="text-[10px] text-slate-400">{m.date}</span>
+                            </div>
+                            <p className="mt-0.5 text-xs leading-snug text-slate-500">{m.note}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
               </div>
             )}
 
@@ -160,16 +189,24 @@ export default function AthleteSelfView() {
 
             {/* Tasks */}
             <div data-testid="athlete-tasks" className="mt-4 rounded-2xl bg-white p-4 shadow-sm">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-[#1E40AF]" />
-                <p className="text-sm font-semibold text-slate-900">Today&rsquo;s tasks</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-[#1E40AF]" />
+                  <p className="text-sm font-semibold text-slate-900">Today&rsquo;s tasks</p>
+                </div>
+                <span className="text-xs font-medium text-slate-400">{doneCount}/{tasks.length}</span>
               </div>
-              <div className="mt-3 space-y-2">
-                {tasks.map((t) => (
-                  <div key={t.label} className="flex items-center gap-2.5">
-                    {t.done ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#065F46]" /> : <Circle className="h-4 w-4 shrink-0 text-slate-300" />}
+              <div className="mt-3 space-y-1">
+                {tasks.map((t, i) => (
+                  <button
+                    key={t.label}
+                    data-testid={`athlete-task-${i}`}
+                    onClick={() => toggleTask(i)}
+                    className="flex w-full items-center gap-2.5 rounded-lg py-2 text-left active:bg-slate-50"
+                  >
+                    {t.done ? <CheckCircle2 className="h-5 w-5 shrink-0 text-[#065F46]" /> : <Circle className="h-5 w-5 shrink-0 text-slate-300" />}
                     <span className={`text-sm ${t.done ? "text-slate-400 line-through" : "text-slate-700"}`}>{t.label}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
