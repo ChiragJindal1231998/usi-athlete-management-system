@@ -4,8 +4,8 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardHeader, CardBody } from "@/components/shared/Card";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { TALENT_PROGRESSION } from "@/data/seed";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { talentProgression } from "@/lib/assessments";
+import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,12 +18,19 @@ import { ScopeNote } from "@/components/shared/ScopeNote";
 const EMPTY = { athleteId: "", sprint30: "", sprint60: "", cmj: "", broadJump: "", benchmark: "National" };
 
 export default function Assessments() {
-  const { scopedAthletes: athletes, fitnessTests: allTests, addFitnessTest, can, scopeLabel } = useApp();
+  const { scopedAthletes: athletes, me, fitnessTests: allTests, addFitnessTest, can, scopeLabel } = useApp();
   const canRecord = can("assessment.record");
   const scopedIds = new Set(athletes.map((a) => a.id));
   const fitnessTests = allTests.filter((t) => scopedIds.has(t.athleteId));
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(EMPTY);
+
+  const defaultId = (me?.id && athletes.some((a) => a.id === me.id)) ? me.id
+    : (athletes.find((a) => a.id === "SPR-014")?.id || athletes[0]?.id);
+  const [selectedId, setSelectedId] = useState(defaultId);
+  const selected = athletes.find((a) => a.id === selectedId) || athletes[0];
+  const selectedFirst = selected?.name?.split(" ")[0] || "athlete";
+  const progression = talentProgression(selected);
 
   const set = (k) => (e) => setDraft((d) => ({ ...d, [k]: e?.target ? e.target.value : e }));
   const valid = draft.athleteId && draft.sprint30 && draft.sprint60 && draft.cmj && draft.broadJump;
@@ -52,7 +59,19 @@ export default function Assessments() {
       <PageHeader
         title="Assessments & TID"
         subtitle="Fitness testing, talent identification and progression analytics"
-        action={canRecord && (
+        action={
+          <div className="flex items-center gap-2">
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="h-9 w-52" data-testid="assessment-athlete-select">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {athletes.map((a) => (
+                <SelectItem key={a.id} value={a.id}>{a.name} — {a.id}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {canRecord && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button data-testid="add-test-result" className="bg-[#1E40AF] hover:bg-[#1E3A8A]">
@@ -112,14 +131,16 @@ export default function Assessments() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        )}
+          )}
+          </div>
+        }
       />
 
       <ScopeNote scopeLabel={scopeLabel} readOnly={!canRecord} note={canRecord ? undefined : "recording results is restricted to performance staff"} />
 
       <div className="grid grid-cols-12 gap-4">
         <Card className="col-span-8">
-          <CardHeader title="Fitness test register · Feb 2025" subtitle="Sprint, jump and combine results vs national / elite benchmarks" />
+          <CardHeader title="Fitness test register · 2025 combine" subtitle="Sprint, jump and combine results vs national / elite benchmarks" />
           <CardBody className="p-0">
             <DataTable
               columns={[
@@ -129,6 +150,7 @@ export default function Assessments() {
                 { key: "cmj", header: "CMJ (cm)", render: (r) => <span className="mono">{r.cmj.toFixed(1)}</span> },
                 { key: "broadJump", header: "Broad (cm)", render: (r) => <span className="mono">{r.broadJump}</span> },
                 { key: "benchmark", header: "Benchmark", render: (r) => <StatusBadge variant={r.benchmark === "Elite" ? "cleared" : r.benchmark === "Developing" ? "mild" : "rehab"}>{r.benchmark}</StatusBadge> },
+                { key: "recordedOn", header: "Tested", render: (r) => <span className="text-[11px] text-slate-500">{r.recordedOn || "—"}</span> },
               ]}
               rows={fitnessTests}
             />
@@ -156,20 +178,20 @@ export default function Assessments() {
 
       <div className="mt-4 grid grid-cols-12 gap-4">
         <Card className="col-span-7">
-          <CardHeader title="Progression · Arjun vs squad" subtitle="Composite talent score by month" />
+          <CardHeader title={`Progression · ${selectedFirst} vs squad`} subtitle="Composite talent score by month" />
           <CardBody>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={TALENT_PROGRESSION} margin={{ top: 8, right: 12, left: -10, bottom: 0 }}>
+              <LineChart data={progression} margin={{ top: 8, right: 12, left: -10, bottom: 0 }}>
                 <CartesianGrid stroke="#F1F5F9" vertical={false} />
                 <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} domain={[60, 100]} />
                 <Tooltip contentStyle={{ border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12 }} />
-                <Line type="monotone" dataKey="arjun" stroke="#1E40AF" strokeWidth={2.5} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="squad" stroke="#94A3B8" strokeWidth={2} dot={{ r: 2.5 }} />
+                <Line type="monotone" dataKey="athlete" name={selectedFirst} stroke="#1E40AF" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="squad" name="Squad average" stroke="#94A3B8" strokeWidth={2} dot={{ r: 2.5 }} />
               </LineChart>
             </ResponsiveContainer>
             <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
-              <span className="flex items-center gap-1.5"><span className="h-1 w-3 rounded bg-[#1E40AF]" /> Arjun</span>
+              <span className="flex items-center gap-1.5"><span className="h-1 w-3 rounded bg-[#1E40AF]" /> {selectedFirst}</span>
               <span className="flex items-center gap-1.5"><span className="h-1 w-3 rounded bg-[#94A3B8]" /> Squad average</span>
             </div>
           </CardBody>
@@ -184,7 +206,11 @@ export default function Assessments() {
                 <XAxis dataKey="athleteName" stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} interval={0} angle={-25} textAnchor="end" height={60} />
                 <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} domain={[3.5, 4.2]} />
                 <Tooltip contentStyle={{ border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="sprint30" radius={[4, 4, 0, 0]} fill="#1E40AF" />
+                <Bar dataKey="sprint30" radius={[4, 4, 0, 0]}>
+                  {fitnessTests.map((r) => (
+                    <Cell key={r.athleteId} fill={r.athleteId === selectedId ? "#1E40AF" : "#BFDBFE"} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardBody>

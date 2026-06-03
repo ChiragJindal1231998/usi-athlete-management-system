@@ -305,15 +305,15 @@ export const NUTRITION_PLAN = {
 };
 
 export const FITNESS_TESTS = [
-  { athleteId: "SPR-014", athleteName: "Arjun Sharma", sprint30: 3.71, sprint60: 6.62, cmj: 58.4, broadJump: 305, benchmark: "Elite" },
-  { athleteId: "SPR-002", athleteName: "Rohan Verma", sprint30: 3.78, sprint60: 6.74, cmj: 54.2, broadJump: 295, benchmark: "National" },
-  { athleteId: "SPR-005", athleteName: "Karan Singh", sprint30: 3.84, sprint60: 6.81, cmj: 51.8, broadJump: 288, benchmark: "National" },
-  { athleteId: "SPR-018", athleteName: "Manish Reddy", sprint30: 3.82, sprint60: 6.79, cmj: 56.1, broadJump: 298, benchmark: "National" },
-  { athleteId: "HUR-007", athleteName: "Devika Rao", sprint30: 3.90, sprint60: 6.92, cmj: 50.4, broadJump: 270, benchmark: "National" },
-  { athleteId: "JMP-009", athleteName: "Aditya Patel", sprint30: 3.86, sprint60: 6.85, cmj: 60.2, broadJump: 312, benchmark: "Elite" },
-  { athleteId: "SPR-022", athleteName: "Neha Joshi", sprint30: 3.88, sprint60: 6.88, cmj: 49.6, broadJump: 268, benchmark: "National" },
-  { athleteId: "ATH-021", athleteName: "Vikas Nair", sprint30: 4.02, sprint60: 7.18, cmj: 47.1, broadJump: 255, benchmark: "Developing" },
-  { athleteId: "ATH-040", athleteName: "Ritu Kapoor", sprint30: 4.11, sprint60: 7.34, cmj: 44.8, broadJump: 242, benchmark: "Developing" },
+  { athleteId: "SPR-014", athleteName: "Arjun Sharma", sprint30: 3.71, sprint60: 6.62, cmj: 58.4, broadJump: 305, benchmark: "Elite", recordedOn: "2025-01-24" },
+  { athleteId: "SPR-002", athleteName: "Rohan Verma", sprint30: 3.78, sprint60: 6.74, cmj: 54.2, broadJump: 295, benchmark: "National", recordedOn: "2025-02-06" },
+  { athleteId: "SPR-005", athleteName: "Karan Singh", sprint30: 3.84, sprint60: 6.81, cmj: 51.8, broadJump: 288, benchmark: "National", recordedOn: "2025-02-06" },
+  { athleteId: "SPR-018", athleteName: "Manish Reddy", sprint30: 3.82, sprint60: 6.79, cmj: 56.1, broadJump: 298, benchmark: "National", recordedOn: "2025-02-07" },
+  { athleteId: "HUR-007", athleteName: "Devika Rao", sprint30: 3.90, sprint60: 6.92, cmj: 50.4, broadJump: 270, benchmark: "National", recordedOn: "2025-02-07" },
+  { athleteId: "JMP-009", athleteName: "Aditya Patel", sprint30: 3.86, sprint60: 6.85, cmj: 60.2, broadJump: 312, benchmark: "Elite", recordedOn: "2025-02-10" },
+  { athleteId: "SPR-022", athleteName: "Neha Joshi", sprint30: 3.88, sprint60: 6.88, cmj: 49.6, broadJump: 268, benchmark: "National", recordedOn: "2025-02-10" },
+  { athleteId: "ATH-021", athleteName: "Vikas Nair", sprint30: 4.02, sprint60: 7.18, cmj: 47.1, broadJump: 255, benchmark: "Developing", recordedOn: "2025-02-11" },
+  { athleteId: "ATH-040", athleteName: "Ritu Kapoor", sprint30: 4.11, sprint60: 7.34, cmj: 44.8, broadJump: 242, benchmark: "Developing", recordedOn: "2025-02-11" },
 ];
 
 export const TALENT_PROGRESSION = [
