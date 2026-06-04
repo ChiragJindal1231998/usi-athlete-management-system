@@ -1,9 +1,10 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider } from "@/context/AppContext";
 import { Shell } from "@/components/shell/Shell";
 import { Toaster } from "@/components/ui/sonner";
 
+import Login, { ENTERED_KEY } from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Athletes from "@/pages/Athletes";
 import Training from "@/pages/Training";
@@ -14,12 +15,29 @@ import Assessments from "@/pages/Assessments";
 import Analytics from "@/pages/Analytics";
 import AICopilot from "@/pages/AICopilot";
 
+// Demo entry gate. The app opens on the credential-free sign-in landing once per
+// browser session; after a persona is chosen (or "skip" is clicked) the flag is
+// set and the in-app shell takes over. Switching persona later uses the TopBar
+// account menu, so this never gets in the way mid-demo.
+function EntryGate({ children }) {
+  const entered =
+    typeof window !== "undefined" && window.sessionStorage.getItem(ENTERED_KEY) === "1";
+  return entered ? children : <Navigate to="/login" replace />;
+}
+
 function App() {
   return (
     <AppProvider>
       <BrowserRouter>
         <Routes>
-          <Route element={<Shell />}>
+          <Route path="/login" element={<Login />} />
+          <Route
+            element={
+              <EntryGate>
+                <Shell />
+              </EntryGate>
+            }
+          >
             <Route path="/" element={<Dashboard />} />
             <Route path="/athletes" element={<Athletes />} />
             <Route path="/training" element={<Training />} />
