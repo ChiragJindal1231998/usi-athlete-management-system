@@ -41,6 +41,7 @@ export const SCOPE_LABEL = {
 //   training.acceptAI   — accept the AI load-reduction swap
 //   training.attendance — set session attendance
 //   training.moveSession— reorder periodisation sessions
+//   training.assign     — enrol an athlete in weekly classes/sessions
 //   nutrition.edit      — edit a fuelling plan
 //   assessment.record   — record a fitness-test result
 //   alert.dismiss       — dismiss an active alert
@@ -52,14 +53,15 @@ export const SCOPE_LABEL = {
 const CAPABILITIES = {
   admin: [
     "athletes.add", "athletes.verify", "athletes.tag", "athletes.assignCoach",
-    "alert.dismiss", "analytics.export",
+    "alert.dismiss", "analytics.export", "training.assign",
   ],
   director: [
     "alert.dismiss", "analytics.export", "assessment.record", "athletes.assignCoach",
+    "training.assign",
   ],
   coach: [
     "training.acceptAI", "training.attendance", "training.moveSession",
-    "athletes.tag",
+    "training.assign", "athletes.tag",
   ],
   physio: [
     "injury.report", "injury.advance", "injury.note",

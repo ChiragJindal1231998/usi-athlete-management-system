@@ -61,11 +61,14 @@ export function AppProvider({ children }) {
   const [aiLoadAccepted, setAiLoadAccepted] = useState(persisted?.aiLoadAccepted ?? false);
   const [attendance, setAttendance] = useState(persisted?.attendance ?? ATTENDANCE_SEED);
   const [fitnessTests, setFitnessTests] = useState(persisted?.fitnessTests ?? FITNESS_TESTS);
+  // Nutritionist-assigned plan overrides, keyed by athlete id. When present, a
+  // saved plan (kcal target / macros / supplements) supersedes the derived plan.
+  const [nutritionPlans, setNutritionPlans] = useState(persisted?.nutritionPlans ?? {});
 
   // persist on any state change (debounced via microtask)
   useEffect(() => {
-    savePersisted({ role, athleteId, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests });
-  }, [role, athleteId, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests]);
+    savePersisted({ role, athleteId, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests, nutritionPlans });
+  }, [role, athleteId, athletes, injuries, alerts, microPlan, aiLoadAccepted, attendance, fitnessTests, nutritionPlans]);
 
   const resetDemo = useCallback(() => {
     setAthletes(ATHLETES_SEED);
@@ -75,6 +78,7 @@ export function AppProvider({ children }) {
     setAiLoadAccepted(false);
     setAttendance(ATTENDANCE_SEED);
     setFitnessTests(FITNESS_TESTS);
+    setNutritionPlans({});
     setRole("director");
     setAthleteId("SPR-014");
     try {
@@ -195,6 +199,11 @@ export function AppProvider({ children }) {
       readiness: 75,
       wellness: defaultWellness(75),
       acwr: 1.0,
+      // Defaults so a fresh athlete renders coherently across modules and the
+      // coach/nutritionist can build their plans from a clean baseline.
+      nutritionAdherence: Number(draft.nutritionAdherence) || 80,
+      weight: Number(draft.weight) || 70,
+      classes: draft.classes || [],
       docsVerified: false,
       onboarding,
       // Shareable invite reference handed to the athlete to self-register.
@@ -205,6 +214,32 @@ export function AppProvider({ children }) {
     };
     setAthletes((p) => [newAthlete, ...p]);
     return newAthlete;
+  }, []);
+
+  // Nutritionist assigns / edits a fuelling plan for an athlete. Stores only the
+  // prescribed fields (kcal target, macros, supplements); observed history
+  // (adherence, hydration) stays derived. Pass null to revert to the derived plan.
+  const saveNutritionPlan = useCallback((id, plan) => {
+    setNutritionPlans((prev) => {
+      if (!plan) {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      }
+      return { ...prev, [id]: plan };
+    });
+  }, []);
+
+  // Coach enrols an athlete in named weekly classes. Persisted on the athlete,
+  // and the athlete is added to today's attendance roster so the assignment is
+  // visible downstream (without disturbing existing roster entries).
+  const assignAthleteClasses = useCallback((id, classes) => {
+    setAthletes((p) => p.map((a) => (a.id === id ? { ...a, classes } : a)));
+    setAttendance((prev) => {
+      if (!classes.length) return prev;
+      if (prev.roster.some((r) => r.athleteId === id)) return prev;
+      return { ...prev, roster: [...prev.roster, { athleteId: id, status: "present" }] };
+    });
   }, []);
 
   const updateAthleteOnboarding = useCallback((id, onboarding) => {
@@ -431,6 +466,7 @@ export function AppProvider({ children }) {
     aiLoadAccepted,
     attendance,
     fitnessTests,
+    nutritionPlans,
     stats,
     can,
     scopedAthletes,
@@ -457,6 +493,8 @@ export function AppProvider({ children }) {
     dismissAlert,
     addFitnessTest,
     moveSession,
+    saveNutritionPlan,
+    assignAthleteClasses,
     resetDemo,
   };
 

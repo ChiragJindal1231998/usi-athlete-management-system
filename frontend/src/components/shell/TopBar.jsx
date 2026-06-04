@@ -1,5 +1,5 @@
 import { useApp } from "@/context/AppContext";
-import { ROLES, STAFF, ATHLETE_LOGINS } from "@/data/seed";
+import { ROLES, STAFF, ATHLETE_LOGINS, ATHLETES_SEED } from "@/data/seed";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,8 +11,27 @@ import {
 import { ChevronDown, Bell, Search, User2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
+const SEED_ATHLETE_IDS = new Set(ATHLETES_SEED.map((a) => a.id));
+const STAGE_LABEL = {
+  invited: "invited — awaiting self-register",
+  pending: "self-registered — docs pending",
+  review: "docs in review",
+  active: "active",
+  verified: "verified",
+};
+
 export function TopBar() {
   const { role, setRole, athleteId, loginAsAthlete, athletes, alerts, resetDemo } = useApp();
+  // Athletes registered at runtime (not in the seed roster) become switchable so
+  // the whole fresh-athlete journey can be demoed end to end across stakeholders.
+  const registeredLogins = athletes
+    .filter((a) => !SEED_ATHLETE_IDS.has(a.id))
+    .map((a) => ({
+      id: a.id,
+      name: a.name,
+      note: `${a.event || a.sport || "Athlete"} · ${STAGE_LABEL[a.onboarding] || a.onboarding || "active"}`,
+    }));
+  const athleteLogins = [...ATHLETE_LOGINS, ...registeredLogins];
   const currentRoleLabel = ROLES.find((r) => r.id === role)?.label;
   const activeAlerts = alerts.filter((a) => a.status === "active").length;
   // For the athlete role, the signed-in profile is the selected athlete, not a fixed staff member.
@@ -107,7 +126,7 @@ export function TopBar() {
             <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
               Login as athlete
             </DropdownMenuLabel>
-            {ATHLETE_LOGINS.map((a) => {
+            {athleteLogins.map((a) => {
               const active = role === "athlete" && athleteId === a.id;
               return (
                 <DropdownMenuItem

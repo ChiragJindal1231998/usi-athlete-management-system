@@ -5,15 +5,20 @@ import { Card, CardHeader, CardBody } from "@/components/shared/Card";
 import { StatCard } from "@/components/shared/StatCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Pill, UtensilsCrossed } from "lucide-react";
+import { Pill, UtensilsCrossed, Pencil } from "lucide-react";
+import { toast } from "sonner";
 import { ScopeNote } from "@/components/shared/ScopeNote";
 import { nutritionPlan, bodyCompSeries } from "@/lib/nutrition";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function Nutrition() {
-  const { scopedAthletes: athletes, me, can, scopeLabel } = useApp();
+  const { scopedAthletes: athletes, me, can, scopeLabel, nutritionPlans, saveNutritionPlan } = useApp();
   const canEdit = can("nutrition.edit");
 
   const defaultId = (me?.id && athletes.some((a) => a.id === me.id)) ? me.id
@@ -22,7 +27,11 @@ export default function Nutrition() {
   const athlete = athletes.find((a) => a.id === selectedId) || athletes[0];
   const firstName = athlete?.name?.split(" ")[0] || "athlete";
 
-  const plan = nutritionPlan(athlete);
+  // Derived plan, overridden by a nutritionist-assigned plan when one exists.
+  const derivedPlan = nutritionPlan(athlete);
+  const override = nutritionPlans?.[athlete?.id];
+  const plan = override ? { ...derivedPlan, ...override } : derivedPlan;
+  const assigned = Boolean(override);
   const bodyComp = bodyCompSeries(athlete);
   const adherenceData = plan.adherenceWeek.map((v, i) => ({ day: DAYS[i], adherence: v }));
   const hydration = plan.hydrationLitres.map((v, i) => ({ day: DAYS[i], litres: v }));
@@ -44,16 +53,27 @@ export default function Nutrition() {
         title="Nutrition"
         subtitle={me ? "My fuelling plan, hydration and body composition" : "Fuelling plan, hydration and body composition"}
         action={
-          <Select value={selectedId} onValueChange={setSelectedId}>
-            <SelectTrigger className="h-9 w-56" data-testid="nutrition-athlete-select">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {athletes.map((a) => (
-                <SelectItem key={a.id} value={a.id}>{a.name} — {a.id}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select value={selectedId} onValueChange={setSelectedId}>
+              <SelectTrigger className="h-9 w-56" data-testid="nutrition-athlete-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {athletes.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name} — {a.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {canEdit && (
+              <DietPlanDialog
+                key={athlete?.id}
+                athlete={athlete}
+                plan={plan}
+                assigned={assigned}
+                onSave={(p) => { saveNutritionPlan(athlete.id, p); toast.success(`Diet plan assigned to ${firstName}`); }}
+              />
+            )}
+          </div>
         }
       />
 
@@ -64,7 +84,7 @@ export default function Nutrition() {
       />
 
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Daily kcal target" value={plan.kcalTarget.toLocaleString()} trend={0} trendLabel="fuelling target" />
+        <StatCard label="Daily kcal target" value={plan.kcalTarget.toLocaleString()} trend={0} trendLabel={assigned ? "nutritionist-assigned" : "auto-derived target"} />
         <StatCard label="Plan adherence" accent value={`${avgAdherence}%`} trend={avgAdherence >= 80 ? 3 : -7} trendLabel={avgAdherence >= 80 ? "on plan" : "below target"} />
         <StatCard label="Avg hydration" value={avgHydration} suffix="L / day" trend={Number(avgHydration) >= 3 ? 4 : -9} />
         <StatCard label="Body fat" value={`${latestFat}%`} trend={fatTrend} trendLabel="vs Wk 1" />
@@ -93,7 +113,7 @@ export default function Nutrition() {
         </Card>
 
         <Card className="col-span-5">
-          <CardHeader title={`Daily plan · ${firstName}`} subtitle="Macro split by share of kcal" />
+          <CardHeader title={`Daily plan · ${firstName}`} subtitle={assigned ? "Nutritionist-assigned · macro split by kcal" : "Auto-derived · macro split by kcal"} />
           <CardBody className="space-y-3">
             <div className="grid grid-cols-3 gap-2">
               <Macro label="Carbs" value={`${plan.macros.carbs} g`} pct={pct(carbsKcal)} color="#1E40AF" />
@@ -174,6 +194,94 @@ export default function Nutrition() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function DietPlanDialog({ athlete, plan, assigned, onSave }) {
+  const [open, setOpen] = useState(false);
+  const [kcal, setKcal] = useState(String(plan.kcalTarget));
+  const [carbs, setCarbs] = useState(String(plan.macros.carbs));
+  const [protein, setProtein] = useState(String(plan.macros.protein));
+  const [fat, setFat] = useState(String(plan.macros.fat));
+  const [supps, setSupps] = useState(plan.supplements.map((s) => ({ ...s })));
+
+  // Re-seed the form from the current plan whenever the dialog opens.
+  const onOpenChange = (v) => {
+    if (v) {
+      setKcal(String(plan.kcalTarget));
+      setCarbs(String(plan.macros.carbs));
+      setProtein(String(plan.macros.protein));
+      setFat(String(plan.macros.fat));
+      setSupps(plan.supplements.map((s) => ({ ...s })));
+    }
+    setOpen(v);
+  };
+
+  const setSupp = (i, k) => (e) => {
+    const val = e?.target ? e.target.value : e;
+    setSupps((p) => p.map((s, idx) => (idx === i ? { ...s, [k]: val } : s)));
+  };
+
+  const submit = () => {
+    onSave({
+      kcalTarget: Number(kcal) || plan.kcalTarget,
+      macros: { carbs: Number(carbs) || 0, protein: Number(protein) || 0, fat: Number(fat) || 0 },
+      supplements: supps
+        .filter((s) => s.name.trim())
+        .map((s) => ({ name: s.name, dose: s.dose, compliance: Number(s.compliance) || 80 })),
+    });
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button data-testid="edit-diet-plan" className="bg-[#1E40AF] hover:bg-[#1E3A8A]">
+          <Pencil className="mr-1.5 h-4 w-4" /> {assigned ? "Edit plan" : "Assign diet"}
+        </Button>
+      </DialogTrigger>
+      <DialogContent data-testid="diet-plan-dialog">
+        <DialogHeader>
+          <DialogTitle>{assigned ? "Edit" : "Assign"} fuelling plan · {athlete?.name}</DialogTitle>
+          <DialogDescription>Set the prescribed kcal target, macro split and supplement protocol. Observed adherence & hydration stay as logged.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <div>
+            <Label className="text-xs text-slate-500">Daily kcal target</Label>
+            <Input data-testid="diet-kcal" className="mt-1" type="number" step="50" value={kcal} onChange={(e) => setKcal(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs text-slate-500">Carbs (g)</Label>
+              <Input data-testid="diet-carbs" className="mt-1" type="number" value={carbs} onChange={(e) => setCarbs(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs text-slate-500">Protein (g)</Label>
+              <Input data-testid="diet-protein" className="mt-1" type="number" value={protein} onChange={(e) => setProtein(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs text-slate-500">Fat (g)</Label>
+              <Input data-testid="diet-fat" className="mt-1" type="number" value={fat} onChange={(e) => setFat(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs text-slate-500">Supplement protocol</Label>
+            <div className="mt-1 space-y-1.5">
+              {supps.map((s, i) => (
+                <div key={i} className="grid grid-cols-2 gap-2">
+                  <Input className="h-8 text-xs" value={s.name} onChange={setSupp(i, "name")} placeholder="Supplement" />
+                  <Input className="h-8 text-xs" value={s.dose} onChange={setSupp(i, "dose")} placeholder="Dose" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+          <Button data-testid="diet-save" onClick={submit} className="bg-[#1E40AF] hover:bg-[#1E3A8A]">Save plan</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

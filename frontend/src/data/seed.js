@@ -263,6 +263,17 @@ export const EXERCISE_LIBRARY = [
   { id: "ex10", name: "Underwater treadmill jog", category: "Rehab", duration: 30, intensity: "Low" },
 ];
 
+// Named weekly classes a coach can enrol an athlete into (sprint training block).
+// Enrolment is stored on the athlete (`classes`) and surfaces in attendance.
+export const TRAINING_CLASSES = [
+  { id: "cls-accel", name: "Acceleration", type: "Speed", day: "Mon" },
+  { id: "cls-strength", name: "Strength", type: "Strength", day: "Tue" },
+  { id: "cls-tempo", name: "Tempo endurance", type: "Endurance", day: "Wed" },
+  { id: "cls-recovery", name: "Recovery & mobility", type: "Recovery", day: "Thu" },
+  { id: "cls-maxv", name: "Max velocity", type: "Speed", day: "Fri" },
+  { id: "cls-power", name: "Power / hills", type: "Power", day: "Sat" },
+];
+
 export const ALERTS_SEED = [
   { id: "AL-01", athleteId: "SPR-014", severity: "severe", title: "Elevated hamstring risk", detail: "ACWR 1.52 · 78% predicted risk · 4-day window", priority: 1, aiGenerated: true, status: "active" },
   { id: "AL-02", athleteId: "THR-003", severity: "moderate", title: "Shoulder load spike", detail: "Throwing volume +38% over baseline", priority: 2, aiGenerated: true, status: "active" },

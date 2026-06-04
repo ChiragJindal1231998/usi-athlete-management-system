@@ -4,9 +4,10 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardHeader, CardBody } from "@/components/shared/Card";
 import { AIInsight } from "@/components/shared/AIInsight";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { PERIODISATION, EXERCISE_LIBRARY } from "@/data/seed";
+import { PERIODISATION, EXERCISE_LIBRARY, TRAINING_CLASSES } from "@/data/seed";
 import { Button } from "@/components/ui/button";
-import { Plus, Check, Activity, GripVertical, CalendarDays } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Plus, Check, GripVertical, CalendarDays, GraduationCap } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from "recharts";
 import { toast } from "sonner";
 import { ScopeNote } from "@/components/shared/ScopeNote";
@@ -28,12 +29,25 @@ const ATTENDANCE_OPTIONS = [
 ];
 
 export default function Training() {
-  const { microPlan, aiLoadAccepted, acceptAILoadReduction, athletes, moveSession, attendance, setAttendanceStatus, can, scopeLabel } = useApp();
+  const { microPlan, aiLoadAccepted, acceptAILoadReduction, athletes, scopedAthletes, moveSession, attendance, setAttendanceStatus, assignAthleteClasses, can, scopeLabel } = useApp();
   const canAcceptAI = can("training.acceptAI");
   const canAttendance = can("training.attendance");
   const canMove = can("training.moveSession");
-  const planWrite = canAcceptAI || canAttendance || canMove;
+  const canAssign = can("training.assign");
+  const planWrite = canAcceptAI || canAttendance || canMove || canAssign;
   const arjun = athletes.find((a) => a.id === "SPR-014") || athletes[0];
+  const [enrolId, setEnrolId] = useState(scopedAthletes[0]?.id);
+  const enrolAthlete = scopedAthletes.find((a) => a.id === enrolId) || scopedAthletes[0];
+  const enrolledClasses = enrolAthlete?.classes || [];
+  const toggleClass = (clsId) => {
+    if (!enrolAthlete) return;
+    const next = enrolledClasses.includes(clsId)
+      ? enrolledClasses.filter((c) => c !== clsId)
+      : [...enrolledClasses, clsId];
+    assignAthleteClasses(enrolAthlete.id, next);
+    const cls = TRAINING_CLASSES.find((c) => c.id === clsId);
+    toast.success(`${enrolAthlete.name.split(" ")[0]} ${next.includes(clsId) ? "enrolled in" : "removed from"} ${cls?.name}`);
+  };
   const attCounts = attendance.roster.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {});
   const [selectedSession, setSelectedSession] = useState(null);
   const [builderItems, setBuilderItems] = useState([]);
@@ -216,6 +230,57 @@ export default function Training() {
           </CardBody>
         </Card>
       </div>
+
+      {canAssign && (
+        <div className="mt-4">
+          <Card>
+            <CardHeader
+              title="Class enrolment"
+              subtitle="Assign an athlete to weekly classes — enrolment flows into the attendance roster"
+              action={
+                <Select value={enrolId} onValueChange={setEnrolId}>
+                  <SelectTrigger className="h-9 w-56" data-testid="enrol-athlete-select">
+                    <SelectValue placeholder="Select athlete" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {scopedAthletes.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} — {a.id}{(a.classes?.length || 0) === 0 ? " · no classes" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              }
+            />
+            <CardBody>
+              <p className="mb-3 text-xs text-slate-500">
+                <GraduationCap className="mr-1 inline h-3.5 w-3.5" />
+                {enrolAthlete ? `${enrolAthlete.name} is enrolled in ${enrolledClasses.length} of ${TRAINING_CLASSES.length} classes` : "No athlete in scope"}
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" data-testid="class-enrolment">
+                {TRAINING_CLASSES.map((cls) => {
+                  const on = enrolledClasses.includes(cls.id);
+                  const typeStyle = SESSION_TYPE_STYLE[cls.type] || "bg-slate-50 text-slate-600 border-slate-200";
+                  return (
+                    <button
+                      key={cls.id}
+                      data-testid={`class-${cls.id}`}
+                      onClick={() => toggleClass(cls.id)}
+                      className={`flex items-center justify-between rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all ${on ? `${typeStyle} ring-1 ring-[#1E40AF]/30` : "border-dashed border-slate-200 bg-white hover:bg-slate-50"}`}
+                    >
+                      <div>
+                        <p className={`font-medium ${on ? "" : "text-slate-700"}`}>{cls.name}</p>
+                        <p className="text-[10px] opacity-70">{cls.day} · {cls.type}</p>
+                      </div>
+                      {on ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4 text-slate-300" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardBody>
+          </Card>
+        </div>
+      )}
 
       <div className="mt-4 grid grid-cols-12 gap-4">
         <div className="col-span-7">
