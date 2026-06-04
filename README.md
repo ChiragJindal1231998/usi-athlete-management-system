@@ -44,13 +44,25 @@ Order matches the left-hand sidebar.
 |---|---|---|
 | 1 | **Dashboard / Command Center** | Stat cards (total / available / injured / readiness), squad readiness chart, AI-prioritised injury alerts, ACWR bar chart, athletes quick view. Content shifts with the role switcher. |
 | 2 | **Athletes** | Registry data table (12 seeded athletes), click-row drawer with Overview / Training / Medical / Documents tabs, multi-step onboarding flow (invited → pending → verified → active). |
-| 3 | **Training & Periodisation** | Macro→Meso→Micro timeline, **drag-and-drop weekly calendar**, AI load-reduction Insight with a real **Accept** button that rewrites Friday/Saturday sessions, 8-week ACWR chart with sweet-spot band, exercise-library session builder, RPE collector. |
+| 3 | **Training & Periodisation** | Macro→Meso→Micro timeline, **drag-and-drop weekly calendar**, AI load-reduction Insight with a real **Accept** button that rewrites Friday/Saturday sessions, 8-week ACWR chart with sweet-spot band, exercise-library session builder, RPE collector. Coaches can also **enrol an athlete into named weekly classes**, which flows through to the attendance roster. |
 | 4 | **Medical & Injury** *(priority module)* | Interactive SVG **body map** (20 clickable regions), per-region detail panel with AI prediction record, **5-stage return-to-play tracker** that mutates real state, mild/moderate/severe injury reporting that immediately colours the region, squad injury log, daily wellness check-ins (sleep / soreness / mood). |
 | 5 | **Sports Science** | HRV, sleep, weekly load, ACWR stats; an AI risk-detection callout that **explains** the prediction (workload + recovery + wellness fusion); load / HRV / sleep charts; recovery actions list. |
-| 6 | **Nutrition** | Daily plan, macro split, adherence area chart, hydration line, supplements compliance, body-composition trend. |
+| 6 | **Nutrition** | Daily plan, macro split, adherence area chart, hydration line, supplements compliance, body-composition trend. Nutritionists can **assign / edit a fuelling plan** (kcal target, macro split, supplements) per athlete; observed adherence & hydration stay derived. |
 | 7 | **Assessments & TID** | Fitness-test register (30m / 60m / CMJ / broad jump) vs benchmarks, talent score ranking, Arjun-vs-squad progression chart, comparative analytics. |
 | 8 | **Analytics & BI** | Drill-down breadcrumb (Federation → Athletics → Sprints → Sprint A), AI predictive insight, injury-rate & participation charts, **Export report** stub. |
 | 9 | **AI Copilot** | Real chat layer powered by **Claude Sonnet 4.5** via Emergent LLM key. Streams token by token. Every request includes a fresh snapshot of athletes, injuries, and alerts as grounding context. |
+
+**Role-based access & the athlete self-view.** A credential-free **sign-in
+landing** (`/login`) and a top-bar switcher drive eight personas. Staff roles
+see federation- or squad-scoped data and capability-gated actions; the
+**Athlete** role gets a self-scoped, mobile-first view with a readiness ring,
+rehab timeline, today's plan, wellness check-in, **my weekly classes**, **my
+assigned diet plan**, an **onboarding status tracker** (invited → registered →
+docs review → active) and a **notifications feed** of the staff/AI actions that
+touched their record. Any athlete registered at runtime is added to the switcher
+automatically, so a fresh athlete can be walked end-to-end across every
+stakeholder — Ops onboarding, coach class enrolment, nutritionist diet
+assignment, physio injury/RTP.
 
 ---
 
@@ -89,10 +101,13 @@ Order matches the left-hand sidebar.
 
 **No backend persistence** is used for athlete data — the prototype is
 intentionally frontend-only for everything except the LLM call. There is no
-auth, no database for domain data. The athlete/injury/training state lives in
-React Context and is mirrored to localStorage so a presenter doesn't lose
-demo progress on reload. A **Reset** button in the top bar restores the
-seed.
+*real* authentication: a **credential-free `/login` landing** acts as a role
+chooser (pick an athlete profile, redeem an invite code, or pick a staff role),
+gated once per browser session — you can skip straight in and switch persona
+anytime from the top-bar account menu. There is no database for domain data.
+The athlete/injury/training/nutrition state lives in React Context and is
+mirrored to localStorage so a presenter doesn't lose demo progress on reload.
+A **Reset** button in the top bar restores the seed.
 
 ---
 
@@ -126,6 +141,7 @@ seed.
         │   │   └── BodyMap.jsx    ← SVG body with 20 clickable regions
         │   └── ui/                ← shadcn primitives (do not edit)
         └── pages/
+            ├── Login.jsx          ← credential-free demo sign-in / role chooser
             ├── Dashboard.jsx
             ├── Athletes.jsx
             ├── Training.jsx       ← contains the drag-drop calendar
@@ -220,6 +236,10 @@ frontend code — always use `process.env.REACT_APP_BACKEND_URL`.
 
 ## 8. The key interactions to demo
 
+The app opens on a credential-free **sign-in landing** — enter as any athlete
+(or redeem an invite code), pick a staff role, or hit *Skip* to drop straight
+onto the Dashboard as Performance Director.
+
 If you have 90 seconds to show this to someone, go in this order:
 
 1. **Dashboard** — point at Arjun's injury alert (lead, severe, AI-flagged) and
@@ -274,8 +294,9 @@ If you're an agent picking up this project:
 
 ## 10. What was deliberately left out
 
-- Authentication and user accounts (spec excludes them; demo starts straight
-  in-app).
+- Real authentication and user accounts (spec excludes them). The `/login`
+  landing is a **credential-free role chooser**, not real auth — there are no
+  passwords, and you can skip straight into the app.
 - A database for athlete data (spec excludes a backend for domain data).
 - Marketing / landing pages — this is a product surface, not a website.
 - "Generative" features the user didn't ask for (image generation, video,
