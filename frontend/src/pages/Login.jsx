@@ -69,16 +69,20 @@ export default function Login() {
     navigate("/");
   };
 
-  // Invite-code path: match against a real athlete's invite code (case-insensitive),
-  // or accept the athlete id directly. Lands the athlete on their self-view, where
-  // the onboarding tracker guides them through registration.
+  // Invite-code path: must match an athlete's `inviteCode` and follow the
+  // USI-XXXX-XXXX format issued by Ops on invite. Raw athlete IDs are
+  // intentionally NOT accepted — a real federation should never let someone
+  // sign in by guessing a roster ID.
+  const INVITE_PATTERN = /^USI-[A-Z0-9]{3,5}-[A-Z0-9]{3,5}$/;
   const redeemCode = (e) => {
     e.preventDefault();
     const q = code.trim().toUpperCase();
     if (!q) return;
-    const match = athletes.find(
-      (a) => (a.inviteCode && a.inviteCode.toUpperCase() === q) || a.id.toUpperCase() === q
-    );
+    if (!INVITE_PATTERN.test(q)) {
+      toast.error("Invite codes look like USI-XXXX-XXXX — check the code from your onboarding email");
+      return;
+    }
+    const match = athletes.find((a) => a.inviteCode && a.inviteCode.toUpperCase() === q);
     if (!match) {
       toast.error("No matching invite — check the code from your onboarding email");
       return;

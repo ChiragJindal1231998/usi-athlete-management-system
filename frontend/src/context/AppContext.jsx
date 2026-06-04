@@ -289,6 +289,7 @@ export function AppProvider({ children }) {
               ...a,
               onboarding: "active",
               docsVerified: true,
+              inviteCode: null, // burn the invite — single-use, no replay after activation
               documents: (a.documents || []).map((d) => ({ ...d, verified: true, verifiedOn: new Date().toISOString().slice(0, 10) })),
             }
           : a
@@ -297,7 +298,8 @@ export function AppProvider({ children }) {
   }, []);
 
   // Advance an athlete through the onboarding pipeline:
-  // invited → pending → review → active. Reaching "active" marks docs verified.
+  // invited → pending → review → active. Reaching "active" marks docs verified
+  // and burns the inviteCode so it can't be reused.
   const advanceOnboarding = useCallback((id) => {
     setAthletes((p) =>
       p.map((a) => {
@@ -305,7 +307,12 @@ export function AppProvider({ children }) {
         const idx = ONBOARDING_STAGES.indexOf(a.onboarding);
         const nextIdx = Math.min(idx + 1, ONBOARDING_STAGES.length - 1);
         const next = ONBOARDING_STAGES[nextIdx];
-        return { ...a, onboarding: next, docsVerified: next === "active" ? true : a.docsVerified };
+        return {
+          ...a,
+          onboarding: next,
+          docsVerified: next === "active" ? true : a.docsVerified,
+          inviteCode: next === "active" ? null : a.inviteCode,
+        };
       })
     );
   }, []);
